@@ -1,5 +1,6 @@
 //import '../css/app.css';
 import '../../public/backend/assets/js/jquery.min.js';
+import 'boxicons/css/boxicons.min.css';
 
 import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
