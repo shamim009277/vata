@@ -331,6 +331,10 @@
                                 </li>
                             </ul>
                         </div>
+                        <select @change="changeLang($event)" v-model="selectedLang" class="border rounded px-2 py-1">
+                            <option value="bn" :selected="selectedLang === 'bn'">বাংলা</option>
+                            <option value="en">English</option>
+                          </select>
                         <div class="user-box dropdown">
                             <a class="d-flex align-items-center nav-link dropdown-toggle dropdown-toggle-nocaret" href="#"
                                 role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -367,10 +371,7 @@
             <!--start page wrapper -->
             <div class="page-wrapper">
                 <div class="page-content">
-
-
                     <slot />
-
                     <!--end row-->
                 </div>
             </div>
@@ -389,7 +390,7 @@
 <script setup>
 import Sidebar from '@/components/Sidebar.vue';
 import { usePage } from '@inertiajs/vue3'
-import { onMounted, watch, ref } from 'vue'
+import { onMounted, watch, ref,computed } from 'vue'
 import { toast } from 'vue3-toastify'
 import { router } from '@inertiajs/vue3'
 
@@ -415,6 +416,22 @@ watch(
     { immediate: true }
 )
 
+const selectedLang = ref(page.props.locale);
+
+const currentLangLabel = computed(() =>
+  selectedLang.value === "bn" ? "বাংলা" : "English"
+);
+
+function changeLang(event) {
+  const locale = event.target.value;
+  //router.visit(route('set-locale', locale), { preserveState: false });
+  router.visit(route('set-locale', locale), {
+        preserveScroll: true,
+        preserveState: false,  // ❌ make sure false
+        replace: true          // replace history
+    });
+}
+
 // Inertia progress bar এর সাথে preloader bind করা
 router.on('start', () => {
     loading.value = true
@@ -422,7 +439,7 @@ router.on('start', () => {
 router.on('finish', () => {
     setTimeout(() => {
         loading.value = false
-    }, 500) // ছোট delay দিলে smooth দেখায়
+    }, 500)
 })
 </script>
 

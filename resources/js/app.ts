@@ -30,20 +30,33 @@ createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: (name) => resolvePageComponent(`./pages/${name}.vue`, import.meta.glob<DefineComponent>('./pages/**/*.vue')),
     setup({ el, App, props, plugin }) {
-        const app = createApp({ render: () => h(App, props) })
-            app.use(plugin)
-            app.use(ZiggyVue)
-            app.use(Vue3Toastify, {
-                autoClose: 3000,
-                position: "top-right",
-                theme: 'colored',
-                pauseOnHover: true,
-                closeOnClick: true,
-                hideProgressBar: false,
-                draggable: true,
-                newestOnTop: true,
-            })
-            app.mount(el);
+        const vueApp = createApp({ render: () => h(App, props) })
+
+        vueApp.use(plugin)
+        vueApp.use(ZiggyVue)
+        vueApp.use(Vue3Toastify, {
+            autoClose: 3000,
+            position: "top-right",
+            theme: 'colored',
+            pauseOnHover: true,
+            closeOnClick: true,
+            hideProgressBar: false,
+            draggable: true,
+            newestOnTop: true,
+        })
+
+        // ✅ Global translation helper
+        vueApp.config.globalProperties.$t = (key) => {
+            const keys = key.split('.')
+            let value = props.initialPage.props.translations
+            for (const k of keys) {
+                value = value[k]
+                if (!value) break
+            }
+            return value || key
+        }
+
+        vueApp.mount(el);
     },
 });
 

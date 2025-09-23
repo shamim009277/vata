@@ -45,9 +45,12 @@
 import AppLogo from '@/image/logo-icon.png';
 
 import { ref } from 'vue'
-import { Link, router } from '@inertiajs/vue3'
+import { Link, router, usePage } from '@inertiajs/vue3'
 
 const activeIndex = ref(null)
+const page = usePage();
+
+const t = (group, key) => page.props.translations[group][key] || key;
 
 const toggle = (index) => {
     activeIndex.value = activeIndex.value === index ? null : index
@@ -59,6 +62,14 @@ const menus = [
         title: 'Dashboard',
         icon: 'bx bx-home-circle',
         route: 'dashboard',
+    },
+    {
+        title: t('menu', 'purchase'),
+        icon: 'bx bx-category',
+        children: [
+            { label: 'Brand', route: 'dashboard' },
+            { label: 'Chat', route: 'dashboard' },
+        ],
     },
     {
         title: 'Products',
@@ -84,10 +95,10 @@ const menus = [
         ],
     },
     {
-        title: 'Settings',
+        title: t('menu', 'settings'),
         icon: 'bx bx-cog',
         children: [
-            { label: 'Business Setting', route: 'subscription-plans.index' },
+            { label: t('menu', 'unit'), route: 'modules.index' },
             { label: 'Module', route: 'modules.index' },
         ],
     },

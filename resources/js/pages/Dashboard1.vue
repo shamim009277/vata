@@ -62,6 +62,7 @@ import { Head } from '@inertiajs/vue3';
                                 <p class="mb-0 text-secondary">Total Customers</p>
                                 <h4 class="my-1 text-warning">8.4K</h4>
                                 <p class="mb-0 font-13">+8.4% from last week</p>
+                                <h6>{{ $t('messages.welcome') }}</h6>
                             </div>
                             <div class="widgets-icons-2 rounded-circle bg-gradient-blooker text-white ms-auto">
                                 <i class='bx bxs-group'></i>
@@ -73,7 +74,3 @@ import { Head } from '@inertiajs/vue3';
         </div>
     </AppLayout1>
 </template>
-
-
-
-<style></style>

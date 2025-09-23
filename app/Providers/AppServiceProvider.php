@@ -28,5 +28,15 @@ class AppServiceProvider extends ServiceProvider
                 'info' => session('info'),
             ],
         ]);
+
+        Inertia::share([
+            'translations' => function () {
+                $locale = app()->getLocale();
+                return [
+                    'messages' => trans('messages'),
+                ];
+            },
+            'locale' => fn () => app()->getLocale(),
+        ]);
     }
 }
