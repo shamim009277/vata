@@ -15,7 +15,17 @@ class UnitController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Unit::query();
+        $query = Unit::query()
+        ->select('*')
+        ->selectRaw("
+            CASE 
+                WHEN unit_standards = 'W' THEN 'Weight'
+                WHEN unit_standards = 'V' THEN 'Volume'
+                WHEN unit_standards = 'L' THEN 'Length'
+                WHEN unit_standards = 'Q' THEN 'Quantity'
+                ELSE 'Unknown'
+            END as standard_label
+        ");
         $search = $request->input('search');
         if ($search) {
             $query->where(function ($q) use ($search) {
@@ -35,6 +45,7 @@ class UnitController extends Controller
         $perPage = $request->perPage ?? 10;
 
         $unitStandards = ['W'=>'Weight', 'V'=>'Volume', 'L'=>'Length','Q'=>'Quantity'];
+        $roots = Unit::where('is_root', 1)->where('root_id', null)->pluck('name', 'id');
 
         return Inertia::render('Unit/Index', [
             'units' => $query->orderBy('id', 'desc')->paginate($perPage)->withQueryString(),
@@ -43,6 +54,7 @@ class UnitController extends Controller
                 'perPage' => $perPage,
             ],
             'unitStandards' => $unitStandards,
+            'roots' => $roots,
         ]);
     }
 
@@ -61,12 +73,12 @@ class UnitController extends Controller
     {
         try {
             $data = $request->validated();
-            $data['is_root'] = $request->is_root ?? false;
+            $data['is_root'] = $request->is_root ?? true;
             
             Unit::create($data);
             return redirect()->back()->with('success', 'Unit created successfully.');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Something went wrong.');
+            return redirect()->back()->with('error', $e->getMessage());
         }
     }
 
@@ -89,9 +101,17 @@ class UnitController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(UnitRequest $request, string $id)
     {
-        //
+        try {
+            $unit = Unit::findOrFail($id);
+            $data = $request->validated();
+            $data['is_root'] = $request->is_root ?? true;
+            $unit->update($data);
+            return redirect()->back()->with('success', 'Unit created successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Something went wrong.');
+        }
     }
 
     /**
@@ -99,6 +119,21 @@ class UnitController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        try {
+            $plan = Unit::findOrFail($id);
+            $plan->delete();
+    
+            return redirect()->back();
+        }catch (\Throwable $th) {
+            return redirect()->back()->with('error', 'Something went wrong.'); 
+        }
+    }
+
+    public function updateStatus(Request $request, Unit $unit)
+    {
+        $unit->update([
+            'is_active' => $request->boolean('is_active')
+        ]);
+        return redirect()->back()->with('success', 'Status changed successfully.');
     }
 }

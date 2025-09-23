@@ -11,6 +11,7 @@ const props = defineProps({
     units: Object,
     filters: Object,
     unitStandards: Object,
+    roots: Object,
 });
 
 const search = ref(props.filters.search || '');
@@ -25,7 +26,7 @@ const form = useForm({
     conversion_rate: '',
     root_id: '',
     unit_standards: '',
-    is_active: true
+    is_active: 1
 });
 
 const createSubscription = () => {
@@ -41,18 +42,18 @@ const openEdit = (unit) => {
     form.name = unit.name;
     form.code = unit.code;
     form.conversion_rate = unit.conversion_rate;
-    form.root_id = unit.root_id;
+    form.root_id = unit.root_id ?? '';
+    form.unit_standards = unit.unit_standards ?? '';
     form.is_active = unit.is_active;
-
 }
 
 const updateStatus = (unit) => {
     router.put(`/units/${unit.id}/status`, {
-        is_active: unit.is_active
+        is_active: unit.is_active ? 1 : 0 
     }, {
         preserveScroll: true,
         onSuccess: () => {
-
+            console.log('Status updated successfully')
         },
     });
 }
@@ -161,9 +162,7 @@ watch([search, perPage], () => {
                                     </div>
                                     <div class="col-sm-12 col-md-6">
                                         <div id="example_filter" class="dataTables_filter">
-                                            <label>Search:<input v-model="search" type="search"
-                                                    class="form-control form-control-sm" placeholder="Search ..."
-                                                    aria-controls="example"></label>
+                                            <label>Search:<input v-model="search" type="search" class="form-control form-control-sm" placeholder="Search ..." aria-controls="example"></label>
                                         </div>
                                     </div>
                                 </div>
@@ -191,8 +190,14 @@ watch([search, perPage], () => {
                                                     <td>{{ unit.code }}</td>
                                                     <td>{{ unit.conversion_rate }}</td>
                                                     <td>{{ unit.root?.name??'N/A' }}</td>
-                                                    <td>{{ unit.unit_standards }}</td>
-                                                    <td>{{ unit.is_active ? 'Active' : 'Inactive' }}</td>
+                                                    <td>{{ unit.standard_label  }}</td>
+                                                    <td>
+                                                        <div class="form-check form-switch">
+                                                            <input class="form-check-input" type="checkbox"
+                                                                id="flexSwitchCheckChecked" v-model="unit.is_active"
+                                                                @change="updateStatus(unit)" :checked="unit.is_active">
+                                                        </div>
+                                                    </td>
                                                     <td>
                                                         <a @click="openEdit(unit)" class="text-primary" style="cursor: pointer;"><i class="fadeIn animated bx bx-edit hover:opacity-90" style="font-size: larger;"></i></a>
                                                         <a @click.prevent="confirmDelete(unit.id)" class="text-danger" style="cursor: pointer;"><i class="fadeIn animated bx bx-trash hover:opacity-90" style="font-size: larger;"></i></a>
@@ -263,14 +268,14 @@ watch([search, perPage], () => {
                                         <label for="root_id" class="form-label">Root</label>
                                         <select class="single-select form-control" :class="[form.errors.root_id ? 'border-danger mb-1' : '']" v-model="form.root_id">
                                             <option value="">Select Root</option>
-                                            <option v-for="root in roots" :key="root.id" :value="root.id">{{ root.name }}</option>
+                                            <option v-for="(root,index) in roots" :key="root.id" :value="index">{{ root }}</option>
                                         </select>
                                         <InputError :message="form.errors.root_id" />
                                     </div>
                                     <div class="col-12 mb-2">
                                         <label for="unit_standards" class="form-label">Unit Standard</label>
                                         <select class="single-select form-control" :class="[form.errors.unit_standards ? 'border-danger mb-1' : '']" v-model="form.unit_standards">
-                                            <option value="">Select Root</option>
+                                            <option value="">Select Standard</option>
                                             <option v-for="(standard,index) in unitStandards" :key="standard.id" :value="index">{{ standard }}</option>
                                         </select>
                                         <InputError :message="form.errors.unit_standards" />
@@ -278,16 +283,13 @@ watch([search, perPage], () => {
 
                                     <div class="col-12 mb-2">
                                         <label for="interval" class="form-label">Status</label>
-                                        <select class="single-select form-control"
-                                            :class="[form.errors.is_active ? 'border-danger mb-1' : '']"
-                                            v-model="form.is_active">
-                                            <option value="">Seelct status</option>
-                                            <option :value="true">Active</option>
-                                            <option :value="false">Inactive</option>
+                                        <select class="single-select form-control" :class="[form.errors.is_active ? 'border-danger mb-1' : '']" v-model="form.is_active">
+                                            <option value="">Select status</option>
+                                            <option :value="1">Active</option>
+                                            <option :value="0">Inactive</option>
                                         </select>
                                         <InputError :message="form.errors.is_active" />
                                     </div>
-
                                 </div>
                                 <div class="modal-footer">
                                     <button type="button" class="btn btn-secondary btn-sm" @click="showModal = false">Close</button>

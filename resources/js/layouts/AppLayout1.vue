@@ -1,11 +1,11 @@
 <template>
     <div>
         <!-- Preloader -->
-        <div v-if="loading" class="preloader">
+        <!-- <div v-if="loading" class="preloader">
             <div class="spinner"></div>
-        </div>
+        </div> -->
         <!--wrapper-->
-        <div v-show="!loading" class="wrapper">
+        <div class="wrapper">
 
             <Sidebar />
 
@@ -394,15 +394,15 @@ import { onMounted, watch, ref,computed } from 'vue'
 import { toast } from 'vue3-toastify'
 import { router } from '@inertiajs/vue3'
 
-const loading = ref(true)
+const loading = ref(false)
 const page = usePage()
 
 // প্রথম load এ preloader hide করা
-onMounted(() => {
-    setTimeout(() => {
-        loading.value = false
-    }, 800)
-})
+// onMounted(() => {
+//     setTimeout(() => {
+//         loading.value = false
+//     }, 800)
+// })
 
 // Optional: Watch for flash changes
 watch(

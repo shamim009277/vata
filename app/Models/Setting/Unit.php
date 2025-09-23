@@ -19,6 +19,10 @@ class Unit extends Model
         'updated_by',
     ];
 
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
+
 
     public function root()
     {
@@ -37,5 +41,17 @@ class Unit extends Model
         static::updating(function ($unit) {
             $unit->updated_by = Auth::id();
         });
+    }
+
+    public function getWeightStandardAttribute()
+    {
+        $map = [
+            'W' => 'Weight',
+            'V' => 'Volume',
+            'L' => 'Length',
+            'Q' => 'Quantity',
+        ];
+
+        return $map[$this->unit_standards] ?? 'Unknown';
     }
 }

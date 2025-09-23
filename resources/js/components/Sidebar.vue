@@ -80,26 +80,11 @@ const menus = [
         ],
     },
     {
-        title: 'Subscription',
-        icon: 'bx bx-category',
-        children: [
-            { label: 'Plan List', route: 'subscription-plans.index' },
-        ],
-    },
-    {
-        title: 'Billing & Subscription',
-        icon: 'bx bx-category',
-        children: [
-            { label: 'Active Plan', route: 'subscription-plans.index' },
-            { label: 'Payment History', route: 'subscription-plans.index' },
-        ],
-    },
-    {
         title: t('menu', 'settings'),
         icon: 'bx bx-cog',
         children: [
-            { label: t('menu', 'unit'), route: 'modules.index' },
-            { label: 'Module', route: 'modules.index' },
+            { label: t('menu', 'unit'), route: 'units.index' },
+            { label: 'Module', route: 'units.index' },
         ],
     },
 ]
