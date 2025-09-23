@@ -6,7 +6,6 @@ import InputError from '@/components/InputError.vue';
 import { Input } from '@/components/ui/input';
 import Swal from 'sweetalert2';
 
-
 const props = defineProps({
     units: Object,
     filters: Object,
@@ -114,6 +113,7 @@ const submit = () => {
         });
     }
 };
+
 
 // Watchers
 watch([search, perPage], () => {
