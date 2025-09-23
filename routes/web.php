@@ -1,14 +1,15 @@
 <?php
 
-use App\Http\Controllers\BusinessSettingController;
-use App\Http\Controllers\ModuleController;
-use App\Http\Controllers\SubscriptionPlanController;
+use Inertia\Inertia;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ItemController;
+use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\PurchaseController;
+use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\RawMaterialController;
 use App\Http\Controllers\UnitController;
 use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\Redirect;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
-use Inertia\Inertia;
 
 
 
@@ -26,6 +27,20 @@ Route::get('dashboard', function () {
 Route::middleware(['auth'])->group(function () {
     Route::put('/units/{unit}/status', [UnitController::class, 'updateStatus']);
     Route::resource('units', UnitController::class);
+
+    Route::put('/items/{item}/status', [ItemController::class, 'updateStatus']);
+    Route::resource('items', ItemController::class);
+
+    Route::put('/raw-materials/{raw_material}/status', [RawMaterialController::class, 'updateStatus']);
+    Route::resource('raw-materials', RawMaterialController::class);
+
+    Route::put('/suppliers/{supplier}/status', [SupplierController::class, 'updateStatus']);
+    Route::resource('suppliers', SupplierController::class);
+
+    Route::put('/customers/{customer}/status', [CustomerController::class, 'updateStatus']);
+    Route::resource('customers', CustomerController::class);
+
+    Route::resource('purchases', PurchaseController::class);
 });
 
 Route::get('/set-locale/{locale}', function ($locale) {
