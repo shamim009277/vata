@@ -1,14 +1,9 @@
 <template>
     <div class="sidebar-wrapper" data-simplebar="true">
         <div class="sidebar-header">
-            <div>
-                <img :src="AppLogo" class="logo-icon" alt="logo icon">
-            </div>
-            <div>
-                <h4 class="logo-text">Rocker</h4>
-            </div>
-            <div class="toggle-icon ms-auto"><i class='bx bx-arrow-to-left'></i>
-            </div>
+            <div><img :src="AppLogo" class="logo-icon" alt="logo icon"></div>
+            <div><h4 class="logo-text">Rocker</h4></div>
+            <div class="toggle-icon ms-auto"><i class='bx bx-arrow-to-left'></i></div>
         </div>
 
         <ul class="metismenu" id="menu">
@@ -51,7 +46,6 @@ const activeIndex = ref(null)
 const page = usePage();
 
 const t = (group, key) => page.props.translations[group][key] || key;
-
 const toggle = (index) => {
     activeIndex.value = activeIndex.value === index ? null : index
 }
@@ -88,6 +82,15 @@ const menus = [
             { label: t('menu', 'supplier'), route: 'suppliers.index' },
             { label: t('menu', 'raw_material'), route: 'raw-materials.index' },
             { label: t('menu', 'item'), route: 'items.index' },
+        ],
+    },
+    {
+        title: 'Authorization',
+        icon: 'bx bx-category',
+        children: [
+            { label: 'User', route: 'units.index' },
+            { label: 'Role', route: 'units.index' },
+            { label: 'Permission', route: 'units.index' },
         ],
     },
 ]
