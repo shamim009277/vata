@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Models\Setting\Unit;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class RawMaterials extends Model
 {
@@ -26,5 +28,10 @@ class RawMaterials extends Model
         static::updating(function($model){
             $model->updated_by = Auth::id();
         });
+    }
+
+    public function unit(): BelongsTo
+    {
+        return $this->belongsTo(Unit::class);
     }
 }

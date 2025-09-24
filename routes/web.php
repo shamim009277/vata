@@ -41,7 +41,6 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('customers', CustomerController::class);
 
     Route::resource('purchases', PurchaseController::class);
-    
 });
 
 Route::get('/set-locale/{locale}', function ($locale) {

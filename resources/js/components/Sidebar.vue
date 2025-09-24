@@ -84,7 +84,10 @@ const menus = [
         icon: 'bx bx-cog',
         children: [
             { label: t('menu', 'unit'), route: 'units.index' },
-            { label: 'Module', route: 'units.index' },
+            { label: t('menu', 'customer'), route: 'customers.index' },
+            { label: t('menu', 'supplier'), route: 'suppliers.index' },
+            { label: t('menu', 'raw_material'), route: 'raw-materials.index' },
+            { label: t('menu', 'item'), route: 'items.index' },
         ],
     },
 ]

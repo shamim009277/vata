@@ -7,48 +7,47 @@ import { Input } from '@/components/ui/input';
 import Swal from 'sweetalert2';
 
 const props = defineProps({
-    units: Object,
+    items: Object,
     filters: Object,
-    unitStandards: Object,
-    roots: Object,
+    units: Object,
 });
 
 const search = ref(props.filters.search || '');
 const perPage = ref(props.filters.perPage || 10);
 
 const showModal = ref(false);
-const editingPlan = ref(false);
+const editingItem = ref(false);
 
 const form = useForm({
     name: '',
-    code: '',
-    conversion_rate: '',
-    root_id: '',
-    unit_standards: '',
+    type: '',
+    unit_id: '',
+    cost_per_unit: '',
+    stock_alert_quantity: '',
     is_active: 1
 });
 
-const createSubscription = () => {
+const createItem = () => {
     showModal.value = true;
-    editingPlan.value = false;
+    editingItem.value = false;
     form.reset();
 }
 
-const openEdit = (unit) => {
+const openEdit = (item) => {
     showModal.value = true;
-    editingPlan.value = unit;
+    editingItem.value = item;
 
-    form.name = unit.name;
-    form.code = unit.code;
-    form.conversion_rate = unit.conversion_rate;
-    form.root_id = unit.root_id ?? '';
-    form.unit_standards = unit.unit_standards ?? '';
-    form.is_active = unit.is_active;
+    form.name = item.name;
+    form.type = item.type;
+    form.unit_id = item.unit_id;
+    form.cost_per_unit = item.cost_per_unit;
+    form.stock_alert_quantity = item.stock_alert_quantity;
+    form.is_active = item.is_active;
 }
 
-const updateStatus = (unit) => {
-    router.put(`/units/${unit.id}/status`, {
-        is_active: unit.is_active ? 1 : 0
+const updateStatus = (item) => {
+    router.put(`/items/${item.id}/status`, {
+        is_active: item.is_active ? 1 : 0
     }, {
         preserveScroll: true,
         onSuccess: () => {
@@ -68,13 +67,13 @@ const confirmDelete = (id) => {
         confirmButtonText: 'Yes, delete it!',
     }).then((result) => {
         if (result.isConfirmed) {
-            form.delete(`/units/${id}`, {
+            form.delete(`/items/${id}`, {
                 preserveScroll: true,
                 preserveState: true,
                 onSuccess: () => {
                     Swal.fire({
                         title: 'Deleted!',
-                        text: 'Plan deleted successfully.',
+                        text: 'Item deleted successfully.',
                         icon: 'success',
                         showConfirmButton: false,
                         timer: 1500
@@ -95,8 +94,8 @@ const confirmDelete = (id) => {
 }
 
 const submit = () => {
-    if (editingPlan.value) {
-        form.put(`/units/${editingPlan.value.id}`, {
+    if (editingItem.value) {
+        form.put(`/items/${editingItem.value.id}`, {
             preserveScroll: true,
             onSuccess: () => {
                 form.reset();
@@ -104,7 +103,7 @@ const submit = () => {
             }
         });
     } else {
-        form.post('/units', {
+        form.post('/items', {
             preserveScroll: true,
             onSuccess: () => {
                 form.reset();
@@ -117,7 +116,7 @@ const submit = () => {
 
 // Watchers
 watch([search, perPage], () => {
-    router.get(route('units.index'), {
+    router.get(route('items.index'), {
         search: search.value,
         perPage: perPage.value,
     }, {
@@ -128,20 +127,20 @@ watch([search, perPage], () => {
 </script>
 <template>
 
-    <Head title="Unit" />
+    <Head title="Item" />
     <AppLayout1>
         <div class="row">
             <div class="col-lg-12">
-                <h4 class="mb-3 text-primary text-center font-bold">Unit</h4>
+                <h4 class="mb-3 text-primary text-center font-bold">Items</h4>
             </div>
             <div class="col-12 col-lg-12">
                 <div class="card radius-2 border-top border-0 border-2 border-primary">
                     <div class="card-header">
                         <div class="card-title d-flex justify-content-between justify-center align-items-center" style="margin-bottom: 0;">
                             <h6 class="mb-0 text-primary d-flex align-items-center">
-                                <a href="javascript:;" class="me-2"><i class="fadeIn animated bx bx-list-ul"></i>Unit List</a>
+                                <a href="javascript:;" class="me-2"><i class="fadeIn animated bx bx-list-ul"></i> Item List</a>
                             </h6>
-                            <button class="btn btn-primary btn-sm" @click="createSubscription"><i class="fadeIn animated bx bx-plus-medical" style="font-size: small;"></i>Add Unit</button>
+                            <button class="btn btn-primary btn-sm" @click="createItem"><i class="fadeIn animated bx bx-plus-medical" style="font-size: small;"></i>Add Item</button>
                         </div>
                     </div>
                     <div class="card-body">
@@ -151,8 +150,7 @@ watch([search, perPage], () => {
                                     <div class="col-sm-12 col-md-6">
                                         <div class="dataTables_length" id="example_length">
                                             <label>Show
-                                                <select v-model="perPage" name="example_length" aria-controls="example"
-                                                    class="form-select form-select-sm">
+                                                <select v-model="perPage" name="example_length" aria-controls="example" class="form-select form-select-sm">
                                                     <option value="10">10</option>
                                                     <option value="25">25</option>
                                                     <option value="50">50</option>
@@ -169,38 +167,37 @@ watch([search, perPage], () => {
 
                                 <div class="row">
                                     <div class="col-sm-12">
-                                        <table id="example" class="table table-striped table-bordered dataTable"
-                                            style="width: 100%;" role="grid" aria-describedby="example_info">
+                                        <table id="example" class="table table-striped table-bordered dataTable" style="width: 100%;" role="grid" aria-describedby="example_info">
                                             <thead>
                                                 <tr role="row">
                                                     <th>Sl</th>
                                                     <th>Name</th>
-                                                    <th>Code</th>
-                                                    <th>Rate</th>
-                                                    <th>Root</th>
-                                                    <th>Unit Standard</th>
+                                                    <th>Type</th>
+                                                    <th>Unit</th>
+                                                    <th>Cost Per Unit</th>
+                                                    <th>Stock Alert Quantity</th>
                                                     <th>Status</th>
                                                     <th>Action</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr v-for="(unit, index) in units.data" :key="unit.id">
+                                                <tr v-for="(item, index) in items.data" :key="item.id">
                                                     <td>{{ index + 1 }}</td>
-                                                    <td>{{ unit.name }}</td>
-                                                    <td>{{ unit.code }}</td>
-                                                    <td>{{ unit.conversion_rate }}</td>
-                                                    <td>{{ unit.root?.name??'N/A' }}</td>
-                                                    <td>{{ unit.standard_label  }}</td>
+                                                    <td>{{ item.name }}</td>
+                                                    <td>{{ item.type }}</td>
+                                                    <td>{{ item.unit.name }}</td>
+                                                    <td>{{ item.cost_per_unit }}</td>
+                                                    <td>{{ item.stock_alert_quantity }}</td>
                                                     <td>
                                                         <div class="form-check form-switch">
                                                             <input class="form-check-input" type="checkbox"
-                                                                id="flexSwitchCheckChecked" v-model="unit.is_active"
-                                                                @change="updateStatus(unit)" :checked="unit.is_active">
+                                                                id="flexSwitchCheckChecked" v-model="item.is_active"
+                                                                @change="updateStatus(item)" :checked="item.is_active">
                                                         </div>
                                                     </td>
                                                     <td>
-                                                        <a @click="openEdit(unit)" class="text-primary" style="cursor: pointer;"><i class="fadeIn animated bx bx-edit hover:opacity-90" style="font-size: larger;"></i></a>
-                                                        <a @click.prevent="confirmDelete(unit.id)" class="text-danger" style="cursor: pointer;"><i class="fadeIn animated bx bx-trash hover:opacity-90" style="font-size: larger;"></i></a>
+                                                        <a @click="openEdit(item)" class="text-primary" style="cursor: pointer;"><i class="fadeIn animated bx bx-edit hover:opacity-90" style="font-size: larger;"></i></a>
+                                                        <a @click.prevent="confirmDelete(item.id)" class="text-danger" style="cursor: pointer;"><i class="fadeIn animated bx bx-trash hover:opacity-90" style="font-size: larger;"></i></a>
                                                     </td>
                                                 </tr>
                                             </tbody>
@@ -211,13 +208,13 @@ watch([search, perPage], () => {
                                 <div class="row">
                                     <div class="col-sm-12 col-md-5">
                                         <div class="dataTables_info" role="status" aria-live="polite">
-                                            Showing {{ units.from }} to {{ units.to }} of {{ units.total }} entries
+                                            Showing {{ items.from }} to {{ items.to }} of {{ items.total }} entries
                                         </div>
                                     </div>
                                     <div class="col-sm-12 col-md-7">
                                         <div class="dataTables_paginate paging_simple_numbers">
                                             <ul class="pagination" style="display: flex; gap: 4px;">
-                                                <li v-for="link in units.links" :key="link.label"
+                                                <li v-for="link in items.links" :key="link.label"
                                                     class="paginate_button page-item"
                                                     :class="{ active: link.active, disabled: !link.url }">
                                                     <Link :href="link.url || '#'" v-html="link.label" class="page-link"
@@ -242,8 +239,8 @@ watch([search, perPage], () => {
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header" style="border-top: 2px solid #004882;">
-                                <h6 class="modal-title"><i class="bx bx-message-alt-add me-2"></i> {{ editingPlan ?
-                                    'Update Unit' : 'Add Unit' }}
+                                <h6 class="modal-title"><i class="bx bx-message-alt-add me-2"></i> {{ editingItem ?
+                                    'Update Item' : 'Add Item' }}
                                 </h6>
                                 <button type="button" class="btn-close" @click="showModal = false"></button>
                             </div>
@@ -255,32 +252,32 @@ watch([search, perPage], () => {
                                         <InputError :message="form.errors.name" />
                                     </div>
                                     <div class="col-12 mb-2">
-                                        <label for="code" class="form-label">Code <span class="text-danger">*</span></label>
-                                        <Input id="code" type="text" v-model="form.code" :class="[form.errors.code ? 'border-danger mb-1' : '']" class="form-control" placeholder="kg" />
-                                        <InputError :message="form.errors.code" />
-                                    </div>
-                                    <div class="col-12 mb-2">
-                                        <label for="conversion_rate" class="form-label">Conversion Rate</label>
-                                        <Input id="conversion_rate" type="number" step="any" v-model="form.conversion_rate" :class="[form.errors.conversion_rate ? 'border-danger mb-1' : '']" class="form-control" placeholder="1" />
-                                        <InputError :message="form.errors.conversion_rate" />
-                                    </div>
-                                    <div class="col-12 mb-2">
-                                        <label for="root_id" class="form-label">Root</label>
-                                        <select class="single-select form-control" :class="[form.errors.root_id ? 'border-danger mb-1' : '']" v-model="form.root_id">
-                                            <option value="">Select Root</option>
-                                            <option v-for="(root,index) in roots" :key="root.id" :value="index">{{ root }}</option>
+                                        <label for="type" class="form-label">Type <span class="text-danger">*</span></label>
+                                        <select class="single-select form-control" :class="[form.errors.type ? 'border-danger mb-1' : '']" v-model="form.type">
+                                            <option value="">Select Type</option>
+                                            <option :value="'primary'" >Primary</option>
+                                            <option :value="'secondary'">Secondary</option>
                                         </select>
-                                        <InputError :message="form.errors.root_id" />
+                                        <InputError :message="form.errors.type" />
                                     </div>
                                     <div class="col-12 mb-2">
-                                        <label for="unit_standards" class="form-label">Unit Standard</label>
-                                        <select class="single-select form-control" :class="[form.errors.unit_standards ? 'border-danger mb-1' : '']" v-model="form.unit_standards">
-                                            <option value="">Select Standard</option>
-                                            <option v-for="(standard,index) in unitStandards" :key="standard.id" :value="index">{{ standard }}</option>
+                                        <label for="unit_id" class="form-label">Unit <span class="text-danger">*</span></label>
+                                        <select class="single-select form-control" :class="[form.errors.unit_id ? 'border-danger mb-1' : '']" v-model="form.unit_id">
+                                            <option value="">Select Unit</option>
+                                            <option v-for="(unit,index) in units" :key="unit.id" :value="unit.id">{{ unit.name }}</option>
                                         </select>
-                                        <InputError :message="form.errors.unit_standards" />
+                                        <InputError :message="form.errors.unit_id" />
                                     </div>
-
+                                    <div class="col-12 mb-2">
+                                        <label for="cost_per_unit" class="form-label">Cost Per Unit</label>
+                                        <Input id="cost_per_unit" type="number" step="any" v-model="form.cost_per_unit" :class="[form.errors.cost_per_unit ? 'border-danger mb-1' : '']" class="form-control" placeholder="Cost Per Unit" />
+                                        <InputError :message="form.errors.cost_per_unit" />
+                                    </div>
+                                    <div class="col-12 mb-2">
+                                        <label for="stock_alert_quantity" class="form-label">Stock Alert Quantity</label>
+                                        <Input id="stock_alert_quantity" type="number" step="any" v-model="form.stock_alert_quantity" :class="[form.errors.stock_alert_quantity ? 'border-danger mb-1' : '']" class="form-control" placeholder="Stock Alert Quantity" />
+                                        <InputError :message="form.errors.stock_alert_quantity" />
+                                    </div>
                                     <div class="col-12 mb-2">
                                         <label for="interval" class="form-label">Status</label>
                                         <select class="single-select form-control" :class="[form.errors.is_active ? 'border-danger mb-1' : '']" v-model="form.is_active">
@@ -293,7 +290,7 @@ watch([search, perPage], () => {
                                 </div>
                                 <div class="modal-footer">
                                     <button type="button" class="btn btn-secondary btn-sm" @click="showModal = false">Close</button>
-                                    <button type="submit" class="btn btn-primary btn-sm">{{ editingPlan ? 'Update' : 'Save' }}</button>
+                                    <button type="submit" class="btn btn-primary btn-sm"><i class="fadeIn animated bx bx-plus-medical" style="font-size: small;"></i> {{ editingItem ? 'Update' : 'Save' }}</button>
                                 </div>
                             </form>
                         </div>

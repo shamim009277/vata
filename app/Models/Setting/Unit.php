@@ -2,8 +2,9 @@
 
 namespace App\Models\Setting;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Unit extends Model
 {
@@ -24,7 +25,7 @@ class Unit extends Model
     ];
 
 
-    public function root()
+    public function root(): BelongsTo
     {
         return $this->belongsTo(Unit::class, 'root_id');
     }
@@ -32,7 +33,6 @@ class Unit extends Model
     public static function boot()
     {
         parent::boot();
-
         static::creating(function ($unit) {
             $unit->created_by = Auth::id();
             $unit->updated_by = Auth::id();
