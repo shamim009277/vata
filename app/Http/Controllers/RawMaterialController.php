@@ -15,7 +15,7 @@ class RawMaterialController extends Controller
      */
     public function index(Request $request)
     {
-        $query = RawMaterials::with('unit')->query();
+        $query = RawMaterials::with('unit');
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {

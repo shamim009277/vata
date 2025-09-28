@@ -132,16 +132,16 @@ watch([search, perPage], () => {
     <AppLayout1>
         <div class="row">
             <div class="col-lg-12">
-                <h4 class="mb-3 text-primary text-center font-bold">Unit</h4>
+                <h4 class="mb-3 text-primary text-center font-bold">{{ $t('messages.unit.unit') }}</h4>
             </div>
             <div class="col-12 col-lg-12">
                 <div class="card radius-2 border-top border-0 border-2 border-primary">
                     <div class="card-header">
                         <div class="card-title d-flex justify-content-between justify-center align-items-center" style="margin-bottom: 0;">
                             <h6 class="mb-0 text-primary d-flex align-items-center">
-                                <a href="javascript:;" class="me-2"><i class="fadeIn animated bx bx-list-ul"></i>Unit List</a>
+                                <a href="javascript:;" class="me-2"><i class="fadeIn animated bx bx-list-ul"></i> {{ $t('messages.unit.unit_list') }}</a>
                             </h6>
-                            <button class="btn btn-primary btn-sm" @click="createSubscription"><i class="fadeIn animated bx bx-plus-medical" style="font-size: small;"></i>Add Unit</button>
+                            <button class="btn btn-primary btn-sm" @click="createSubscription"><i class="fadeIn animated bx bx-plus-medical" style="font-size: small;"></i> {{ $t('messages.unit.unit_create') }}</button>
                         </div>
                     </div>
                     <div class="card-body">
@@ -162,7 +162,7 @@ watch([search, perPage], () => {
                                     </div>
                                     <div class="col-sm-12 col-md-6">
                                         <div id="example_filter" class="dataTables_filter">
-                                            <label>Search:<input v-model="search" type="search" class="form-control form-control-sm" placeholder="Search ..." aria-controls="example"></label>
+                                            <label>{{$t('messages.unit.search')}}:<input v-model="search" type="search" class="form-control form-control-sm" :placeholder="$t('messages.unit.search') + ' ...'" aria-controls="example"></label>
                                         </div>
                                     </div>
                                 </div>

@@ -54,4 +54,12 @@ class Unit extends Model
 
         return $map[$this->unit_standards] ?? 'Unknown';
     }
+
+    public function scopeActive($query){
+        return $query->where('is_active',1);
+    }
+
+    public function scopeInactive($query){
+        return $query->where('is_active',0);
+    }
 }

@@ -15,7 +15,7 @@ class ItemController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Item::with('unit')->query();
+        $query = Item::with('unit');
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {

@@ -16,18 +16,22 @@ return new class extends Migration
             $table->string('code')->unique();
             $table->year('year');
             $table->date('date');
-            $table->enum('type',['purchase','sale','expense','labor','others']);
+            $table->enum('type', ['purchase', 'sale', 'expense', 'labor', 'others']);
             $table->unsignedBigInteger('related_id')->nullable();
             $table->unsignedBigInteger('payment_id')->nullable();
             $table->decimal('amount', 15, 2);
-            $table->string('payment_method')->nullable();
+            $table->string('payment_method', 20)->nullable();
             $table->text('note')->nullable();
             $table->boolean('is_active')->default(true);
             $table->integer('created_by')->nullable();
             $table->integer('updated_by')->nullable();
             $table->timestamps();
 
-            $table->index(['type', 'year', 'related_id','payment_id','payment_method','date']);
+            // custom short index name
+            $table->index(
+                ['type', 'year', 'related_id', 'payment_id', 'payment_method', 'date'],
+                'pt_type_year_pid_pmethod_date_idx'
+            );
         });
     }
 
