@@ -131,16 +131,16 @@ watch([search, perPage], () => {
     <AppLayout1>
         <div class="row">
             <div class="col-lg-12">
-                <h4 class="mb-3 text-primary text-center font-bold">Raw Materials</h4>
+                <h4 class="mb-3 text-primary text-center font-bold">{{ $t('messages.raw_material.raw_material') }}</h4>
             </div>
             <div class="col-12 col-lg-12">
                 <div class="card radius-2 border-top border-0 border-2 border-primary">
                     <div class="card-header">
                         <div class="card-title d-flex justify-content-between justify-center align-items-center" style="margin-bottom: 0;">
                             <h6 class="mb-0 text-primary d-flex align-items-center">
-                                <a href="javascript:;" class="me-2"><i class="fadeIn animated bx bx-list-ul"></i> Raw Material List</a>
+                                <a href="javascript:;" class="me-2"><i class="fadeIn animated bx bx-list-ul"></i> {{ $t('messages.raw_material.raw_material_list') }}</a>
                             </h6>
-                            <button class="btn btn-primary btn-sm" @click="createRawMarerials"><i class="fadeIn animated bx bx-plus-medical" style="font-size: small;"></i>Add Raw Material</button>
+                            <button class="btn btn-primary btn-sm" @click="createRawMarerials"><i class="fadeIn animated bx bx-plus-medical" style="font-size: small;"></i>{{ $t('messages.raw_material.raw_material_create') }}</button>
                         </div>
                     </div>
                     <div class="card-body">
@@ -160,7 +160,7 @@ watch([search, perPage], () => {
                                     </div>
                                     <div class="col-sm-12 col-md-6">
                                         <div id="example_filter" class="dataTables_filter">
-                                            <label>Search:<input v-model="search" type="search" class="form-control form-control-sm" placeholder="Search ..." aria-controls="example"></label>
+                                            <label>{{ $t('messages.raw_material.search') }}:<input v-model="search" type="search" class="form-control form-control-sm" placeholder="{{ $t('messages.raw_material.search') }}" aria-controls="example"></label>
                                         </div>
                                     </div>
                                 </div>
@@ -170,14 +170,14 @@ watch([search, perPage], () => {
                                         <table id="example" class="table table-striped table-bordered dataTable" style="width: 100%;" role="grid" aria-describedby="example_info">
                                             <thead>
                                                 <tr role="row">
-                                                    <th>Sl</th>
-                                                    <th>Name</th>
-                                                    <th>Type</th>
-                                                    <th>Unit</th>
-                                                    <th>Cost Per Unit</th>
-                                                    <th>Stock Alert Quantity</th>
-                                                    <th>Status</th>
-                                                    <th>Action</th>
+                                                    <th>{{ $t('messages.raw_material.sl') }}</th>
+                                                    <th>{{ $t('messages.raw_material.name') }}</th>
+                                                    <th>{{ $t('messages.raw_material.type') }}</th>
+                                                    <th>{{ $t('messages.raw_material.unit') }}</th>
+                                                    <th>{{ $t('messages.raw_material.cost_per_unit') }}</th>
+                                                    <th>{{ $t('messages.raw_material.stock_alert_quantity') }}</th>
+                                                    <th>{{ $t('messages.raw_material.status') }}</th>
+                                                    <th>{{ $t('messages.raw_material.action') }}</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -190,9 +190,7 @@ watch([search, perPage], () => {
                                                     <td>{{ rawMaterial.stock_alert_quantity }}</td>
                                                     <td>
                                                         <div class="form-check form-switch">
-                                                            <input class="form-check-input" type="checkbox"
-                                                                id="flexSwitchCheckChecked" v-model="rawMaterial.is_active"
-                                                                @change="updateStatus(rawMaterial)" :checked="rawMaterial.is_active">
+                                                            <input class="form-check-input" type="checkbox" id="flexSwitchCheckChecked" v-model="rawMaterial.is_active" @change="updateStatus(rawMaterial)" :checked="rawMaterial.is_active">
                                                         </div>
                                                     </td>
                                                     <td>
@@ -214,11 +212,8 @@ watch([search, perPage], () => {
                                     <div class="col-sm-12 col-md-7">
                                         <div class="dataTables_paginate paging_simple_numbers">
                                             <ul class="pagination" style="display: flex; gap: 4px;">
-                                                <li v-for="link in rawMaterials.links" :key="link.label"
-                                                    class="paginate_button page-item"
-                                                    :class="{ active: link.active, disabled: !link.url }">
-                                                    <Link :href="link.url || '#'" v-html="link.label" class="page-link"
-                                                        :class="{ 'bg-primary text-white': link.active, 'text-muted': !link.url }" />
+                                                <li v-for="link in rawMaterials.links" :key="link.label" class="paginate_button page-item" :class="{ active: link.active, disabled: !link.url }">
+                                                    <Link :href="link.url || '#'" v-html="link.label" class="page-link" :class="{ 'bg-primary text-white': link.active, 'text-muted': !link.url }" />
                                                 </li>
                                             </ul>
                                         </div>
@@ -239,58 +234,56 @@ watch([search, perPage], () => {
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header" style="border-top: 2px solid #004882;">
-                                <h6 class="modal-title"><i class="bx bx-message-alt-add me-2"></i> {{ editingRawMaterial ?
-                                    'Update Raw Material' : 'Add Raw Material' }}
-                                </h6>
+                                <h6 class="modal-title"><i class="bx bx-message-alt-add me-2"></i> {{ editingRawMaterial ? $t('messages.raw_material.update_raw_material') : $t('messages.raw_material.add_raw_material') }}</h6>
                                 <button type="button" class="btn-close" @click="showModal = false"></button>
                             </div>
                             <form @submit.prevent="submit">
                                 <div class="modal-body row">
                                     <div class="col-12 mb-2">
-                                        <label for="name" class="form-label">Name <span class="text-danger">*</span></label>
-                                        <Input id="name" type="text" v-model="form.name" :class="[form.errors.name ? 'border-danger mb-1' : '']" class="form-control" placeholder="Kilogram" />
+                                        <label for="name" class="form-label">{{ $t('messages.raw_material.name') }} <span class="text-danger">*</span></label>
+                                        <Input id="name" type="text" v-model="form.name" :class="[form.errors.name ? 'border-danger mb-1' : '']" class="form-control" placeholder="{{ $t('messages.raw_material.name') }}" />
                                         <InputError :message="form.errors.name" />
                                     </div>
                                     <div class="col-12 mb-2">
-                                        <label for="type" class="form-label">Type <span class="text-danger">*</span></label>
+                                        <label for="type" class="form-label">{{ $t('messages.raw_material.type') }} <span class="text-danger">*</span></label>
                                         <select class="single-select form-control" :class="[form.errors.type ? 'border-danger mb-1' : '']" v-model="form.type">
-                                            <option value="">Select Type</option>
-                                            <option :value="'primary'" >Primary</option>
-                                            <option :value="'secondary'">Secondary</option>
+                                            <option value="">{{ $t('messages.raw_material.select_type') }}</option>
+                                            <option :value="'primary'" >{{ $t('messages.raw_material.primary') }}</option>
+                                            <option :value="'secondary'">{{ $t('messages.raw_material.secondary') }}</option>
                                         </select>
                                         <InputError :message="form.errors.type" />
                                     </div>
                                     <div class="col-12 mb-2">
-                                        <label for="unit_id" class="form-label">Unit <span class="text-danger">*</span></label>
+                                        <label for="unit_id" class="form-label">{{ $t('messages.raw_material.unit') }} <span class="text-danger">*</span></label>
                                         <select class="single-select form-control" :class="[form.errors.unit_id ? 'border-danger mb-1' : '']" v-model="form.unit_id">
-                                            <option value="">Select Unit</option>
+                                            <option value="">{{ $t('messages.raw_material.select_unit') }}</option>
                                             <option v-for="(unit,index) in units" :key="unit.id" :value="unit.id">{{ unit.name }}</option>
                                         </select>
                                         <InputError :message="form.errors.unit_id" />
                                     </div>
                                     <div class="col-12 mb-2">
-                                        <label for="cost_per_unit" class="form-label">Cost Per Unit</label>
-                                        <Input id="cost_per_unit" type="number" step="any" v-model="form.cost_per_unit" :class="[form.errors.cost_per_unit ? 'border-danger mb-1' : '']" class="form-control" placeholder="Cost Per Unit" />
+                                        <label for="cost_per_unit" class="form-label">{{ $t('messages.raw_material.cost_per_unit') }}</label>
+                                        <Input id="cost_per_unit" type="number" step="any" v-model="form.cost_per_unit" :class="[form.errors.cost_per_unit ? 'border-danger mb-1' : '']" class="form-control" placeholder="{{ $t('messages.raw_material.cost_per_unit') }}" />
                                         <InputError :message="form.errors.cost_per_unit" />
                                     </div>
                                     <div class="col-12 mb-2">
-                                        <label for="stock_alert_quantity" class="form-label">Stock Alert Quantity</label>
+                                        <label for="stock_alert_quantity" class="form-label">{{ $t('messages.raw_material.stock_alert_quantity') }}</label>
                                         <Input id="stock_alert_quantity" type="number" step="any" v-model="form.stock_alert_quantity" :class="[form.errors.stock_alert_quantity ? 'border-danger mb-1' : '']" class="form-control" placeholder="Stock Alert Quantity" />
                                         <InputError :message="form.errors.stock_alert_quantity" />
                                     </div>
                                     <div class="col-12 mb-2">
-                                        <label for="interval" class="form-label">Status</label>
+                                        <label for="interval" class="form-label">{{ $t('messages.raw_material.status') }}</label>
                                         <select class="single-select form-control" :class="[form.errors.is_active ? 'border-danger mb-1' : '']" v-model="form.is_active">
-                                            <option value="">Select status</option>
-                                            <option :value="1">Active</option>
-                                            <option :value="0">Inactive</option>
+                                            <option value="">{{ $t('messages.raw_material.select_status') }}</option>
+                                            <option :value="1">{{ $t('messages.raw_material.active') }}</option>
+                                            <option :value="0">{{ $t('messages.raw_material.inactive') }}</option>
                                         </select>
                                         <InputError :message="form.errors.is_active" />
                                     </div>
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary btn-sm" @click="showModal = false">Close</button>
-                                    <button type="submit" class="btn btn-primary btn-sm"><i class="fadeIn animated bx bx-plus-medical" style="font-size: small;"></i> {{ editingRawMaterial ? 'Update' : 'Save' }}</button>
+                                    <button type="button" class="btn btn-secondary btn-sm" @click="showModal = false">{{ $t('messages.raw_material.close') }}</button>
+                                    <button type="submit" class="btn btn-primary btn-sm"><i class="fadeIn animated bx bx-plus-medical" style="font-size: small;"></i> {{ editingRawMaterial ? $t('messages.button.update') : $t('messages.button.save') }}</button>
                                 </div>
                             </form>
                         </div>
@@ -308,32 +301,26 @@ watch([search, perPage], () => {
     background: rgba(0, 0, 0, 0.5);
     z-index: 1040;
 }
-
 .fade-enter-active,
 .fade-leave-active {
     transition: opacity 0.3s ease;
 }
-
 .fade-enter-from,
 .fade-leave-to {
     opacity: 0;
 }
-
 .slide-fade-enter-active,
 .slide-fade-leave-active {
     transition: all 0.3s ease;
 }
-
 .slide-fade-enter-from {
     opacity: 0;
     transform: translateY(-20px);
 }
-
 .slide-fade-leave-to {
     opacity: 0;
     transform: translateY(-20px);
 }
-
 .modal {
     position: fixed;
     inset: 0;

@@ -130,16 +130,16 @@ watch([search, perPage], () => {
     <AppLayout1>
         <div class="row">
             <div class="col-lg-12">
-                <h4 class="mb-3 text-primary text-center font-bold">Customer</h4>
+                <h4 class="mb-3 text-primary text-center font-bold">{{ $t('messages.customer.customer') }}</h4>
             </div>
             <div class="col-12 col-lg-12">
                 <div class="card radius-2 border-top border-0 border-2 border-primary">
                     <div class="card-header">
                         <div class="card-title d-flex justify-content-between justify-center align-items-center" style="margin-bottom: 0;">
                             <h6 class="mb-0 text-primary d-flex align-items-center">
-                                <a href="javascript:;" class="me-2"><i class="fadeIn animated bx bx-list-ul"></i>Customer List</a>
+                                <a href="javascript:;" class="me-2"><i class="fadeIn animated bx bx-list-ul"></i>{{ $t('messages.customer.customer_list') }}</a>
                             </h6>
-                            <button class="btn btn-primary btn-sm" @click="createCustomer"><i class="fadeIn animated bx bx-plus-medical" style="font-size: small;"></i>Add Customer</button>
+                            <button class="btn btn-primary btn-sm" @click="createCustomer"><i class="fadeIn animated bx bx-plus-medical" style="font-size: small;"></i>{{ $t('messages.customer.add_customer') }}</button>
                         </div>
                     </div>
                     <div class="card-body">
@@ -149,8 +149,7 @@ watch([search, perPage], () => {
                                     <div class="col-sm-12 col-md-6">
                                         <div class="dataTables_length" id="example_length">
                                             <label>Show
-                                                <select v-model="perPage" name="example_length" aria-controls="example"
-                                                    class="form-select form-select-sm">
+                                                <select v-model="perPage" name="example_length" aria-controls="example" class="form-select form-select-sm">
                                                     <option value="10">10</option>
                                                     <option value="25">25</option>
                                                     <option value="50">50</option>
@@ -160,7 +159,7 @@ watch([search, perPage], () => {
                                     </div>
                                     <div class="col-sm-12 col-md-6">
                                         <div id="example_filter" class="dataTables_filter">
-                                            <label>Search:<input v-model="search" type="search" class="form-control form-control-sm" placeholder="Search ..." aria-controls="example"></label>
+                                            <label>{{ $t('messages.customer.search') }}:<input v-model="search" type="search" class="form-control form-control-sm" placeholder="{{ $t('messages.customer.search') }}" aria-controls="example"></label>
                                         </div>
                                     </div>
                                 </div>
@@ -171,14 +170,14 @@ watch([search, perPage], () => {
                                             style="width: 100%;" role="grid" aria-describedby="example_info">
                                             <thead>
                                                 <tr role="row">
-                                                    <th>Sl</th>
-                                                    <th>Name</th>
-                                                    <th>Email</th>
-                                                    <th>Phone</th>
-                                                    <th>Contact Person</th>
-                                                    <th>Address</th>
-                                                    <th>Status</th>
-                                                    <th>Action</th>
+                                                    <th>{{ $t('messages.customer.sl') }}</th>
+                                                    <th>{{ $t('messages.customer.name') }}</th>
+                                                    <th>{{ $t('messages.customer.email') }}</th>
+                                                    <th>{{ $t('messages.customer.phone') }}</th>
+                                                    <th>{{ $t('messages.customer.contact_person') }}</th>
+                                                    <th>{{ $t('messages.customer.address') }}</th>
+                                                    <th>{{ $t('messages.customer.status') }}</th>
+                                                    <th>{{ $t('messages.customer.action') }}</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -237,51 +236,49 @@ watch([search, perPage], () => {
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header" style="border-top: 2px solid #004882;">
-                                <h6 class="modal-title"><i class="bx bx-message-alt-add me-2"></i> {{ editingCustomer ?
-                                    'Update Customer' : 'Add Customer' }}
-                                </h6>
+                                <h6 class="modal-title"><i class="bx bx-message-alt-add me-2"></i> {{ editingCustomer ?$t('messages.customer.update_customer') : $t('messages.customer.add_customer') }}</h6>
                                 <button type="button" class="btn-close" @click="showModal = false"></button>
                             </div>
                             <form @submit.prevent="submit">
                                 <div class="modal-body row">
                                     <div class="col-12 mb-2">
-                                        <label for="name" class="form-label">Name <span class="text-danger">*</span></label>
-                                        <Input id="name" type="text" v-model="form.name" :class="[form.errors.name ? 'border-danger mb-1' : '']" class="form-control" placeholder="Kilogram" />
+                                        <label for="name" class="form-label">{{ $t('messages.customer.name') }} <span class="text-danger">*</span></label>
+                                        <Input id="name" type="text" v-model="form.name" :class="[form.errors.name ? 'border-danger mb-1' : '']" class="form-control" placeholder="{{ $t('messages.customer.name') }}" />
                                         <InputError :message="form.errors.name" />
                                     </div>
                                     <div class="col-12 mb-2">
-                                        <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
-                                        <Input id="email" type="email" v-model="form.email" :class="[form.errors.email ? 'border-danger mb-1' : '']" class="form-control" placeholder="kg" />
+                                        <label for="email" class="form-label">{{ $t('messages.customer.email') }} <span class="text-danger">*</span></label>
+                                        <Input id="email" type="email" v-model="form.email" :class="[form.errors.email ? 'border-danger mb-1' : '']" class="form-control" placeholder="{{ $t('messages.customer.email') }}" />
                                         <InputError :message="form.errors.email" />
                                     </div>
                                     <div class="col-12 mb-2">
-                                        <label for="phone" class="form-label">Phone <span class="text-danger">*</span></label>
-                                        <Input id="phone" type="number" step="any" v-model="form.phone" :class="[form.errors.phone ? 'border-danger mb-1' : '']" class="form-control" placeholder="1" />
+                                        <label for="phone" class="form-label">{{ $t('messages.customer.phone') }} <span class="text-danger">*</span></label>
+                                        <Input id="phone" type="number" step="any" v-model="form.phone" :class="[form.errors.phone ? 'border-danger mb-1' : '']" class="form-control" placeholder="{{ $t('messages.customer.phone') }}" />
                                         <InputError :message="form.errors.phone" />
                                     </div>
                                     <div class="col-12 mb-2">
-                                        <label for="contact_person" class="form-label">Contact Person <span class="text-danger">*</span></label>
-                                        <Input id="contact_person" type="text" v-model="form.contact_person" :class="[form.errors.contact_person ? 'border-danger mb-1' : '']" class="form-control" placeholder="kg" />
+                                        <label for="contact_person" class="form-label">{{ $t('messages.customer.contact_person') }} <span class="text-danger">*</span></label>
+                                        <Input id="contact_person" type="text" v-model="form.contact_person" :class="[form.errors.contact_person ? 'border-danger mb-1' : '']" class="form-control" placeholder="{{ $t('messages.customer.contact_person') }}" />
                                         <InputError :message="form.errors.contact_person" />
                                     </div>
                                     <div class="col-12 mb-2">
-                                        <label for="address" class="form-label">Address <span class="text-danger">*</span></label>
-                                        <Input id="address" type="text" v-model="form.address" :class="[form.errors.address ? 'border-danger mb-1' : '']" class="form-control" placeholder="kg" />
+                                        <label for="address" class="form-label">{{ $t('messages.customer.address') }} <span class="text-danger">*</span></label>
+                                        <Input id="address" type="text" v-model="form.address" :class="[form.errors.address ? 'border-danger mb-1' : '']" class="form-control" placeholder="{{ $t('messages.customer.address') }}" />
                                         <InputError :message="form.errors.address" />
                                     </div>
                                     <div class="col-12 mb-2">
-                                        <label for="interval" class="form-label">Status</label>
+                                        <label for="interval" class="form-label">{{ $t('messages.customer.status') }}</label>
                                         <select class="single-select form-control" :class="[form.errors.is_active ? 'border-danger mb-1' : '']" v-model="form.is_active">
-                                            <option value="">Select status</option>
-                                            <option :value="1">Active</option>
-                                            <option :value="0">Inactive</option>
+                                            <option value="">{{ $t('messages.customer.select_status') }}</option>
+                                            <option :value="1">{{ $t('messages.customer.active') }}</option>
+                                            <option :value="0">{{ $t('messages.customer.inactive') }}</option>
                                         </select>
                                         <InputError :message="form.errors.is_active" />
                                     </div>
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary btn-sm" @click="showModal = false">Close</button>
-                                    <button type="submit" class="btn btn-primary btn-sm"><i class="fadeIn animated bx bx-plus-medical" style="font-size: small;"></i> {{ editingCustomer ? 'Update' : 'Save' }}</button>
+                                    <button type="button" class="btn btn-secondary btn-sm" @click="showModal = false">{{ $t('messages.button.close') }}</button>
+                                    <button type="submit" class="btn btn-primary btn-sm"><i class="fadeIn animated bx bx-plus-medical" style="font-size: small;"></i> {{ editingCustomer ? $t('messages.button.update') : $t('messages.button.save') }}</button>
                                 </div>
                             </form>
                         </div>
