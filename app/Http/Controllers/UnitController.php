@@ -54,7 +54,7 @@ class UnitController extends Controller
         });
 
         return Inertia::render('Unit/Index', [
-            'units' => $query->orderBy('id', 'desc')->cursorPaginate($perPage)->withQueryString(),
+            'units' => $query->orderBy('id', 'desc')->paginate($perPage)->withQueryString(),
             'filters' => [
                 'search' => $request->search,
                 'perPage' => $perPage,

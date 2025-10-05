@@ -131,7 +131,7 @@ watch([search, perPage], () => {
     <AppLayout1>
         <div class="row">
             <div class="col-lg-12">
-                <h4 class="mb-3 text-primary text-center font-bold">{{ $t('messages.item.items') }}</h4>
+                <h4 class="mb-3 text-primary text-center font-bold">{{ $page.props.translations.messages.item.items }}</h4>
             </div>
             <div class="col-12 col-lg-12">
                 <div class="card radius-2 border-top border-0 border-2 border-primary">
@@ -170,7 +170,7 @@ watch([search, perPage], () => {
                                         <table id="example" class="table table-striped table-bordered dataTable" style="width: 100%;" role="grid" aria-describedby="example_info">
                                             <thead>
                                                 <tr role="row">
-                                                    <th>{{ $t('table.sl') }}</th>
+                                                    <th>#</th>
                                                     <th>{{ $t('table.name') }}</th>
                                                     <th>{{ $t('table.type') }}</th>
                                                     <th>{{ $t('table.unit') }}</th>

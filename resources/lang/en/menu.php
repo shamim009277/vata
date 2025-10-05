@@ -7,4 +7,5 @@
         'customer' => 'Customer',
         'supplier' => 'Supplier',
         'item' => 'Item',
+        'item_list' => 'Item List',
     ];

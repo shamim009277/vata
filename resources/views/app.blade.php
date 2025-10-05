@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => ($appearance ?? 'system') == 'dark'])>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali&display=swap" rel="stylesheet">
 
 <head>
     <meta charset="utf-8">
@@ -28,6 +29,15 @@
 
         html.dark {
             background-color: oklch(0.145 0 0);
+        }
+
+        body {
+            font-family: 'Noto Sans Bengali', sans-serif !important;
+        }
+
+        table thead{
+            background-color: #076e4c;
+            color: white;   
         }
     </style>
 

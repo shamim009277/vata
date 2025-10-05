@@ -131,17 +131,14 @@ watch([search, perPage], () => {
     <Head title="Unit" />
     <AppLayout1>
         <div class="row">
-            <div class="col-lg-12">
-                <h4 class="mb-3 text-primary text-center font-bold">{{ $t('messages.unit.unit') }}</h4>
-            </div>
             <div class="col-12 col-lg-12">
                 <div class="card radius-2 border-top border-0 border-2 border-primary">
                     <div class="card-header">
                         <div class="card-title d-flex justify-content-between justify-center align-items-center" style="margin-bottom: 0;">
-                            <h6 class="mb-0 text-primary d-flex align-items-center">
-                                <a href="javascript:;" class="me-2"><i class="fadeIn animated bx bx-list-ul"></i> {{ $t('messages.unit.unit_list') }}</a>
+                            <h6 class="mb-0 text-primary d-flex align-items-center" style="font-weight: bold;">
+                                <a href="javascript:;" class="me-2"><i class="fadeIn animated bx bx-list-ul"></i> {{ $page.props.translations.messages.unit.unit_list }}</a>
                             </h6>
-                            <button class="btn btn-primary btn-sm" @click="createSubscription"><i class="fadeIn animated bx bx-plus-medical" style="font-size: small;"></i> {{ $t('messages.unit.unit_create') }}</button>
+                            <button class="btn btn-primary btn-sm" @click="createSubscription"><i class="fadeIn animated bx bx-plus-medical" style="font-size: small;"></i> {{ $page.props.translations.messages.unit.unit_create }}</button>
                         </div>
                     </div>
                     <div class="card-body">
@@ -161,7 +158,7 @@ watch([search, perPage], () => {
                                     </div>
                                     <div class="col-sm-12 col-md-6">
                                         <div id="example_filter" class="dataTables_filter">
-                                            <label>{{$t('messages.unit.search')}}:<input v-model="search" type="search" class="form-control form-control-sm" :placeholder="$t('messages.unit.search') + ' ...'" aria-controls="example"></label>
+                                            <label>{{ $page.props.translations.messages.unit.search }}:<input v-model="search" type="search" class="form-control form-control-sm" :placeholder="$page.props.translations.messages.unit.search + ' ...'" aria-controls="example"></label>
                                         </div>
                                     </div>
                                 </div>
@@ -172,14 +169,14 @@ watch([search, perPage], () => {
                                             style="width: 100%;" role="grid" aria-describedby="example_info">
                                             <thead>
                                                 <tr role="row">
-                                                    <th>{{ $t('table.sl') }}</th>
-                                                    <th>{{ $t('table.name') }}</th>
-                                                    <th>{{ $t('table.code') }}</th>
-                                                    <th>{{ $t('table.rate') }}</th>
-                                                    <th>{{ $t('table.root') }}</th>
-                                                    <th>{{ $t('table.unit_standard') }}</th>
-                                                    <th>{{ $t('table.status') }}</th>
-                                                    <th>{{ $t('table.action') }}</th>
+                                                    <th>#</th>
+                                                    <th>{{ $page.props.translations.messages.table.name }}</th>
+                                                    <th>{{ $page.props.translations.messages.table.code }}</th>
+                                                    <th>{{ $page.props.translations.messages.table.rate }}</th>
+                                                    <th>{{ $page.props.translations.messages.table.root }}</th>
+                                                    <th>{{ $page.props.translations.messages.table.unit_standard }}</th>
+                                                    <th>{{ $page.props.translations.messages.table.status }}</th>
+                                                    <th>{{ $page.props.translations.messages.table.action }}</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -241,30 +238,30 @@ watch([search, perPage], () => {
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header" style="border-top: 2px solid #004882;">
-                                <h6 class="modal-title"><i class="bx bx-message-alt-add me-2"></i> {{ editingPlan ? $t('messages.update_unit') : $t('messages.add_unit') }}</h6>
+                                <h6 class="modal-title"><i class="bx bx-message-alt-add me-2"></i> {{ editingPlan ? $pages.props.translations.messages.unit.update_unit : $pages.props.translations.messages.unit.add_unit }}</h6>
                                 <button type="button" class="btn-close" @click="showModal = false"></button>
                             </div>
                             <form @submit.prevent="submit">
                                 <div class="modal-body row">
                                     <div class="col-12 mb-2">
-                                        <label for="name" class="form-label">{{ $t('messages.name') }} <span class="text-danger">*</span></label>
-                                        <Input id="name" type="text" v-model="form.name" :class="[form.errors.name ? 'border-danger mb-1' : '']" class="form-control" placeholder="{{ $t('messages.Kilogram') }}" />
+                                        <label for="name" class="form-label">{{ $t('messages.unit.name') }} <span class="text-danger">*</span></label>
+                                        <Input id="name" type="text" v-model="form.name" :class="[form.errors.name ? 'border-danger mb-1' : '']" class="form-control" :placeholder="$t('messages.unit.Kilogram')" />
                                         <InputError :message="form.errors.name" />
                                     </div>
                                     <div class="col-12 mb-2">
-                                        <label for="code" class="form-label">{{ $t('messages.code') }} <span class="text-danger">*</span></label>
-                                        <Input id="code" type="text" v-model="form.code" :class="[form.errors.code ? 'border-danger mb-1' : '']" class="form-control" placeholder="{{ $t('messages.kg') }}" />
+                                        <label for="code" class="form-label">{{ $t('messages.unit.code') }} <span class="text-danger">*</span></label>
+                                        <Input id="code" type="text" v-model="form.code" :class="[form.errors.code ? 'border-danger mb-1' : '']" class="form-control" :placeholder="$t('messages.unit.kg')" />
                                         <InputError :message="form.errors.code" />
                                     </div>
                                     <div class="col-12 mb-2">
-                                        <label for="conversion_rate" class="form-label">{{ $t('messages.conversion_rate') }}</label>
-                                        <Input id="conversion_rate" type="number" step="any" v-model="form.conversion_rate" :class="[form.errors.conversion_rate ? 'border-danger mb-1' : '']" class="form-control" placeholder="1" />
+                                        <label for="conversion_rate" class="form-label">{{ $t('messages.unit.conversion_rate') }}</label>
+                                        <Input id="conversion_rate" type="number" step="any" v-model="form.conversion_rate" :class="[form.errors.conversion_rate ? 'border-danger mb-1' : '']" class="form-control" :placeholder="1" />
                                         <InputError :message="form.errors.conversion_rate" />
                                     </div>
                                     <div class="col-12 mb-2">
-                                        <label for="root_id" class="form-label">{{ $t('messages.root') }}</label>
+                                        <label for="root_id" class="form-label">{{ $t('messages.unit.root') }}</label>
                                         <select class="single-select form-control" :class="[form.errors.root_id ? 'border-danger mb-1' : '']" v-model="form.root_id">
-                                            <option value="">{{ $t('messages.select_root') }}</option>
+                                            <option value="">{{ $t('messages.unit.select_root') }}</option>
                                             <option v-for="(root,index) in roots" :key="root.id" :value="index">{{ root }}</option>
                                         </select>
                                         <InputError :message="form.errors.root_id" />
@@ -272,18 +269,18 @@ watch([search, perPage], () => {
                                     <div class="col-12 mb-2">
                                         <label for="unit_standards" class="form-label">{{ $t('messages.unit_standards') }}</label>
                                         <select class="single-select form-control" :class="[form.errors.unit_standards ? 'border-danger mb-1' : '']" v-model="form.unit_standards">
-                                            <option value="">{{ $t('messages.select_standard') }}</option>
+                                            <option value="">{{ $t('messages.unit.select_standard') }}</option>
                                             <option v-for="(standard,index) in unitStandards" :key="standard.id" :value="index">{{ standard }}</option>
                                         </select>
                                         <InputError :message="form.errors.unit_standards" />
                                     </div>
 
                                     <div class="col-12 mb-2">
-                                        <label for="interval" class="form-label">{{ $t('messages.status') }}</label>
+                                        <label for="interval" class="form-label">{{ $t('messages.unit.status') }}</label>
                                         <select class="single-select form-control" :class="[form.errors.is_active ? 'border-danger mb-1' : '']" v-model="form.is_active">
-                                            <option value="">{{ $t('messages.select_status') }}</option>
-                                            <option :value="1">{{ $t('messages.active') }}</option>
-                                            <option :value="0">{{ $t('messages.inactive') }}</option>
+                                            <option value="">{{ $t('messages.unit.select_status') }}</option>
+                                            <option :value="1">{{ $t('messages.unit.active') }}</option>
+                                            <option :value="0">{{ $t('messages.unit.inactive') }}</option>
                                         </select>
                                         <InputError :message="form.errors.is_active" />
                                     </div>

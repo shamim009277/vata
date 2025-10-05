@@ -34,6 +34,7 @@ class AppServiceProvider extends ServiceProvider
                 $locale = app()->getLocale();
                 return [
                     'messages' => trans('messages'),
+                    'table' => trans('table'),
                 ];
             },
             'locale' => fn () => app()->getLocale(),

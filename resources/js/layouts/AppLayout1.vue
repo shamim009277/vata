@@ -479,7 +479,7 @@ router.on('finish', () => {
 
 .page-wrapper {
     flex: 1;
-    padding: 20px;
+    padding: 0px;
     background: #f5f6fa;
 }
 
