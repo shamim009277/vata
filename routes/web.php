@@ -61,6 +61,7 @@ Route::middleware(['auth'])->group(function () {
 
 
     Route::get('/row-productions/all', [RowProductionController::class, 'allrowProduction'])->name('row-productions.all');
+    Route::post('/row-productions/lock', [RowProductionController::class, 'lockProduction'])->name('row-productions.lock');
     Route::resource('row-productions', RowProductionController::class);
 
 

@@ -14,17 +14,18 @@ const props = defineProps({
 });
 
 const fieldsList = ref(props.fields);
-
 const showModal = ref(false);
 const selectedProduction = ref(null);
 const editProduction = ref(false);
 const spinBtn = ref(false);
 const loading = ref(true);
 
-
 const search = ref(props.filters?.search || '');
 const perPage = ref(props.filters?.perPage || 10);
-const date = ref(props.filters?.date || new Date().toISOString().split('T')[0]);
+//const date = ref(props.filters?.date || new Date().toISOString().split('T')[0]);
+const start_date = ref('');
+const end_date = ref('');
+
 
 // Main form
 const form = useForm({
@@ -96,7 +97,6 @@ const openEdit = (production) => {
     }
 };
 
-
 // Form submit
 const submit = () => {
     spinBtn.value = true;
@@ -113,25 +113,12 @@ const submit = () => {
     });
 };
 
-const lockProduction = () => {
-    spinBtn.value = true;
-    lockForm.post(route('row-productions.lock'), {
-        onSuccess: () => {
-            lockForm.reset();
-            spinBtn.value = false;
-        },
-        onError: () => {
-            spinBtn.value = false;
-        },
-    });
-};
-
-
-watch([search, perPage,date], () => {
-    router.get(route('row-productions.index'), {
+watch([search, perPage,start_date,end_date], () => {
+    router.get(route('row-productions.all'), {
         search: search.value,
         perPage: perPage.value,
-        date: date.value,
+        start_date: start_date.value,
+        end_date: end_date.value,
     }, {
         preserveState: true,
         replace: true,
@@ -187,7 +174,6 @@ const confirmDelete = (id) => {
     })
 }
 
-
 // Simulate loading
 onMounted(() => {
     setTimeout(() => {
@@ -197,7 +183,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <Head title="আজকের প্রোডাকশন" />
+    <Head title="সব প্রোডাকশন" />
     <AppLayout1>
         <div class="row">
             <div class="col-12 col-lg-12">
@@ -208,31 +194,31 @@ onMounted(() => {
                             <!-- Title -->
                             <h6 class="mb-0 text-primary d-flex align-items-center">
                                 <a href="javascript:;" class="me-2">
-                                    <i class="fadeIn animated bx bx-list-ul"></i> আজকের প্রোডাকশন
+                                    <i class="fadeIn animated bx bx-list-ul"></i> সব প্রোডাকশন
                                 </a>
                             </h6>
 
                             <!-- Right-side controls -->
                             <div class="d-flex align-items-center gap-2">
-                                <!-- Date Filter -->
+                                <!-- Start Date -->
                                 <input
                                     type="date"
-                                    v-model="date"
+                                    v-model="start_date"
                                     class="form-control form-control-sm"
                                     style="width: 160px;"
+                                    placeholder="শুরুর তারিখ"
                                 />
 
-                                <!-- Create Button -->
-                                <button class="btn btn-primary btn-sm" @click="createProduction">
-                                    <i class="fadeIn animated bx bx-plus-medical me-1" style="font-size: small;"></i>
-                                    নতুন প্রোডাকশন
-                                </button>
+                                <span>থেকে</span>
 
-                                <!-- Edit Button -->
-                                <button class="btn btn-primary btn-sm" @click="lockProduction">
-                                    <i class="fadeIn animated bx bx-lock me-1" style="font-size: small;"></i>
-                                    লক করুন
-                                </button>
+                                <!-- End Date -->
+                                <input
+                                    type="date"
+                                    v-model="end_date"
+                                    class="form-control form-control-sm"
+                                    style="width: 160px;"
+                                    placeholder="শেষ তারিখ"
+                                />
                             </div>
                         </div>
                     </div>
