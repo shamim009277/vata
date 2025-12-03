@@ -61,7 +61,7 @@ const menus = [
     },
     {
         title: 'চালান',
-        icon: 'bx bx-cog',
+        icon: 'bx bx-receipt',
         children: [
             { label: 'আজকের চালান', route: 'invoices.index' },
             { label: 'অগ্রিম চালান', route: 'invoice.advance' },
@@ -70,7 +70,7 @@ const menus = [
     },
     {
         title: 'কাঁচা ইট প্রোডাকশন',
-        icon: 'bx bx-cog',
+        icon: 'bx bx-box',
         children: [
             { label: 'আজকের প্রোডাকশন', route: 'row-productions.index' },
             { label: 'সব প্রোডাকশন', route: 'row-productions.all' },
@@ -78,7 +78,7 @@ const menus = [
     },
     {
         title: 'ডেলিভারি',
-        icon: 'bx bx-cog',
+        icon: 'bx bx-rocket',
         children: [
             { label: 'আজকের ডেলিভারি', route: 'deliveries.index' },
             { label: 'আজ ডেলিভারি যাবে', route: 'invoice.advance' },
