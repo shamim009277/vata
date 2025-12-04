@@ -1,18 +1,19 @@
 <?php
 
-use App\Http\Controllers\BusinessSettingController;
-use App\Http\Controllers\BusinessStoreController;
-use App\Http\Controllers\DeliveryController;
-use App\Http\Controllers\FieldListController;
-use App\Http\Controllers\InvoiceController;
+use Inertia\Inertia;
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\ModuleController;
-use App\Http\Controllers\PaymentHeadController;
-use App\Http\Controllers\RowProductionController;
+use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\DeliveryController;
+use App\Http\Controllers\FieldListController;
 use App\Http\Controllers\StockListController;
+use App\Http\Controllers\PaymentHeadController;
+use App\Http\Controllers\PaymentKhataController;
+use App\Http\Controllers\BusinessStoreController;
+use App\Http\Controllers\RowProductionController;
+use App\Http\Controllers\BusinessSettingController;
 use App\Http\Controllers\SubscriptionPlanController;
-use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 
 
@@ -67,6 +68,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/delivery/invoice', [DeliveryController::class, 'invoice']);
     Route::resource('deliveries', DeliveryController::class);
+
+    Route::resource('payment-khata', PaymentKhataController::class);
 });
 
 require __DIR__.'/settings.php';

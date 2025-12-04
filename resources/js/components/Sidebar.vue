@@ -86,6 +86,11 @@ const menus = [
         ],
     },
     {
+        title: 'পেমেন্ট খাতা',
+        icon: 'bx bx-bar-chart',
+        route: 'payment-khata.index',
+    },
+    {
         title: 'সেটিং',
         icon: 'bx bx-cog',
         children: [

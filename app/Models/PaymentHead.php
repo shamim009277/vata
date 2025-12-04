@@ -22,7 +22,7 @@ class PaymentHead extends Model
     protected $casts = [
         'is_active' => 'boolean',
     ];
-    
+
     public static function boot()
     {
         parent::boot();
@@ -48,5 +48,10 @@ class PaymentHead extends Model
                 }
             }
         });
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', 1);
     }
 }
