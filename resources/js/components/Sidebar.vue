@@ -91,6 +91,11 @@ const menus = [
         route: 'payment-khata.index',
     },
     {
+        title: 'লোড খাতা',
+        icon: 'bx bx-bar-chart',
+        route: 'loads.index',
+    },
+    {
         title: 'সেটিং',
         icon: 'bx bx-cog',
         children: [

@@ -45,8 +45,6 @@ class PaymentKhataController extends Controller
         }
         $perPage = $request->perPage ?? 20;
 
-        //dd($query->paginate($perPage)->withQueryString());
-
         return Inertia::render('payment_khata/Index', [
             'items' => $items,
             'payments' => $query->paginate($perPage)->withQueryString(),

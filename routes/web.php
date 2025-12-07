@@ -3,6 +3,7 @@
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ItemController;
+use App\Http\Controllers\LoadController;
 use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\DeliveryController;
@@ -70,6 +71,8 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('deliveries', DeliveryController::class);
 
     Route::resource('payment-khata', PaymentKhataController::class);
+
+    Route::resource('loads', LoadController::class);
 });
 
 require __DIR__.'/settings.php';
