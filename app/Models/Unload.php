@@ -3,39 +3,40 @@
 namespace App\Models;
 
 use App\Models\BusinessStore;
-use App\Models\Round;
+use App\Models\UnloadDetails;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Auth;
 
-class Load extends Model
+class Unload extends Model
 {
-    protected $table = 'loads';
+    protected $table = "unloads";
 
     protected $fillable = [
-        'business_id',
-        'store_id',
-        'season',
+        'business_id',    
+        'store_id',    
+        'season',    
         'loading_date',    
-        'load_type',    
+        'unload_date',    
         'round',    
-        'field_list_id',    
-        'item_id',    
-        'quantity',    
+        'load_quantity',    
+        'note',    
         'is_active',    
         'is_locked',    
         'created_by',    
-        'updated_by',
+        'updated_by'
     ];
-    
-    public function item(): BelongsTo
+
+    protected $casts = [
+        'is_active' => 'boolean',
+        'loading_date' => 'date',
+        'unload_date' => 'date'
+    ];
+
+    public function details(): HasMany
     {
-        return $this->belongsTo(item::class, 'item_id', 'id');
-    }
-    public function fieldList(): BelongsTo
-    {
-        return $this->belongsTo(fieldList::class, 'field_list_id', 'id');
+        return $this->hasMany(UnloadDetails::class, 'unload_id', 'id');
     }
 
     public function scopeActive($query)
@@ -47,16 +48,16 @@ class Load extends Model
     {
         parent::boot();
 
-        static::creating(function ($payment_katha) {
+        static::creating(function ($unload) {
             $user_business = BusinessStore::where('user_id', Auth::user()->id)->first();
-            $payment_katha->created_by = Auth::user()->id;
-            $payment_katha->updated_by = Auth::user()->id;
-            $payment_katha->business_id = $user_business->business_id;
-            $payment_katha->store_id = $user_business->id;
+            $unload->created_by = Auth::user()->id;
+            $unload->updated_by = Auth::user()->id;
+            $unload->business_id = $user_business->business_id;
+            $unload->store_id = $user_business->id;
         });
 
-        static::updating(function ($payment_katha) {
-            $payment_katha->updated_by = Auth::user()->id;
+        static::updating(function ($unload) {
+            $unload->updated_by = Auth::user()->id;
         });
 
         static::addGlobalScope('filterByRole', function (Builder $builder) {

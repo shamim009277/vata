@@ -96,6 +96,11 @@ const menus = [
         route: 'loads.index',
     },
     {
+        title: 'আনলোড',
+        icon: 'bx bx-bar-chart',
+        route: 'unloads.index',
+    },
+    {
         title: 'সেটিং',
         icon: 'bx bx-cog',
         children: [

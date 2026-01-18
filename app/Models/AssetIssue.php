@@ -2,45 +2,60 @@
 
 namespace App\Models;
 
+use App\Models\AssetLost;
+use App\Models\Business;
 use App\Models\BusinessStore;
-use App\Models\Round;
+use App\Models\NewAssetStock;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Auth;
 
-class Load extends Model
+
+class AssetIssue extends Model
 {
-    protected $table = 'loads';
+    protected $table = "asset_issues";
 
     protected $fillable = [
-        'business_id',
-        'store_id',
-        'season',
-        'loading_date',    
-        'load_type',    
-        'round',    
-        'field_list_id',    
-        'item_id',    
-        'quantity',    
-        'is_active',    
-        'is_locked',    
-        'created_by',    
-        'updated_by',
+        "business_id",    
+        "store_id",    
+        "season",    
+        "stock_id",    
+        "product_name",    
+        "product_category",    
+        "to_whom",    
+        "issue_date",    
+        "location",    
+        "quantity",    
+        "is_active",    
+        "created_by",    
+        "updated_by"
     ];
-    
-    public function item(): BelongsTo
+
+    public function stock():BelongsTo
     {
-        return $this->belongsTo(item::class, 'item_id', 'id');
-    }
-    public function fieldList(): BelongsTo
-    {
-        return $this->belongsTo(fieldList::class, 'field_list_id', 'id');
+        return $this->belongsTo(NewAssetStock::class, 'stock_id', 'id');
     }
 
-    public function scopeActive($query)
+    public function losts():hasMany
     {
-        return $query->where('is_active', true);
+        return $this->hasMany(AssetLost::class);
+    }
+
+    public function ideles(): hasMany
+    {
+        return $this->hasMany(IdelAsset::class);
+    }
+
+    public function business():BelongsTo
+    {
+        return $this->belongsTo(Business::class, 'business_id', 'id');
+    }
+
+    public function store():BelongsTo
+    {
+        return $this->belongsTo(BusinessStore::class, 'store_id', 'id');
     }
 
     public static function boot()
@@ -69,4 +84,5 @@ class Load extends Model
             }
         });
     }
+
 }

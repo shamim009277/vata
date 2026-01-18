@@ -1,25 +1,23 @@
 <?php
 
-use Inertia\Inertia;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AssetsController;
+use App\Http\Controllers\BusinessSettingController;
+use App\Http\Controllers\BusinessStoreController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DeliveryController;
+use App\Http\Controllers\FieldListController;
+use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\LoadController;
 use App\Http\Controllers\ModuleController;
-use App\Http\Controllers\InvoiceController;
-use App\Http\Controllers\DeliveryController;
-use App\Http\Controllers\FieldListController;
-use App\Http\Controllers\StockListController;
 use App\Http\Controllers\PaymentHeadController;
 use App\Http\Controllers\PaymentKhataController;
-use App\Http\Controllers\BusinessStoreController;
 use App\Http\Controllers\RowProductionController;
-use App\Http\Controllers\BusinessSettingController;
+use App\Http\Controllers\StockListController;
 use App\Http\Controllers\SubscriptionPlanController;
-
-
-
-
-
+use App\Http\Controllers\UnloadController;
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 
 Route::get('/', function () {
@@ -31,9 +29,10 @@ Route::get('/', function () {
     ]);
 })->name('home');
 
-Route::get('dashboard', function () {
-    return Inertia::render('Dashboard1');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard')->middleware(['auth', 'verified']);
+Route::get('session/get', [DashboardController::class, 'session_get'])->name('session.get')->middleware(['auth', 'verified']);
+Route::post('dashboard/session_change', [DashboardController::class, 'sessionChange'])->name('dashboard.session_change')->middleware(['auth', 'verified']);
+
 
 Route::middleware(['auth'])->group(function () {
     Route::put('/plans/{plan}/status', [SubscriptionPlanController::class, 'updateStatus']);
@@ -72,7 +71,14 @@ Route::middleware(['auth'])->group(function () {
 
     Route::resource('payment-khata', PaymentKhataController::class);
 
+    Route::post('/loads/round/store', [LoadController::class, 'roundStore'])->name('load.round.store');
+    Route::post('/loads/stock', [LoadController::class, 'checkStock'])->name('load.stock');
     Route::resource('loads', LoadController::class);
+
+    Route::resource('unloads', UnloadController::class);
+    Route::resource('assets', AssetsController::class);
+    Route::post('asset/issue/store',[AssetsController::class,'issueStore'])->name('assets.issue.store');
+    Route::get('assets/products/search', [AssetsController::class, 'productsSearch'])->name('assets.products.search');
 });
 
 require __DIR__.'/settings.php';

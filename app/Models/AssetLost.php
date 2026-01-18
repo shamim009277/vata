@@ -3,50 +3,33 @@
 namespace App\Models;
 
 use App\Models\BusinessStore;
-use App\Models\Round;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 
-class Load extends Model
+class AssetLost extends Model
 {
-    protected $table = 'loads';
+
+    protected $table = "asset_losts";
 
     protected $fillable = [
-        'business_id',
-        'store_id',
-        'season',
-        'loading_date',    
-        'load_type',    
-        'round',    
-        'field_list_id',    
-        'item_id',    
-        'quantity',    
-        'is_active',    
-        'is_locked',    
-        'created_by',    
-        'updated_by',
+        "business_id",
+        "store_id",
+        "season",
+        "issue_id",
+        "product_name",
+        "product_category",
+        "reported",
+        "lost_date",
+        "quantity",
+        "is_active",
+        "created_by",
+        "updated_by"
     ];
-    
-    public function item(): BelongsTo
-    {
-        return $this->belongsTo(item::class, 'item_id', 'id');
-    }
-    public function fieldList(): BelongsTo
-    {
-        return $this->belongsTo(fieldList::class, 'field_list_id', 'id');
-    }
-
-    public function scopeActive($query)
-    {
-        return $query->where('is_active', true);
-    }
 
     public static function boot()
     {
         parent::boot();
-
         static::creating(function ($payment_katha) {
             $user_business = BusinessStore::where('user_id', Auth::user()->id)->first();
             $payment_katha->created_by = Auth::user()->id;

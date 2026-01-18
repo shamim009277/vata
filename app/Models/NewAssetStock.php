@@ -2,45 +2,40 @@
 
 namespace App\Models;
 
+use App\Models\AssetIssue;
 use App\Models\BusinessStore;
-use App\Models\Round;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Auth;
 
-class Load extends Model
+class NewAssetStock extends Model
 {
-    protected $table = 'loads';
+    protected $table= "new_asset_stocks";
 
     protected $fillable = [
-        'business_id',
-        'store_id',
-        'season',
-        'loading_date',    
-        'load_type',    
-        'round',    
-        'field_list_id',    
-        'item_id',    
-        'quantity',    
-        'is_active',    
-        'is_locked',    
-        'created_by',    
-        'updated_by',
+        "business_id",    
+        "store_id",    
+        "season",    
+        "stock_date",    
+        "product_name",    
+        "product_category",    
+        "vendor",    
+        "quantity",    
+        "unit_price",    
+        "total_price",    
+        "location",    
+        "photo",    
+        "has_warranty",    
+        "warranty_expiry_date",    
+        "is_active",    
+        "created_by",    
+        "updated_by"
     ];
-    
-    public function item(): BelongsTo
-    {
-        return $this->belongsTo(item::class, 'item_id', 'id');
-    }
-    public function fieldList(): BelongsTo
-    {
-        return $this->belongsTo(fieldList::class, 'field_list_id', 'id');
-    }
 
-    public function scopeActive($query)
+    public function issues():HasMany
     {
-        return $query->where('is_active', true);
+        return $this->hasMany(AssetIssue::class, 'stock_id', 'id');
     }
 
     public static function boot()
