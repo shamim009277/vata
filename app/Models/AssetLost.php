@@ -52,4 +52,9 @@ class AssetLost extends Model
             }
         });
     }
+
+    public function issue()
+    {
+        return $this->belongsTo(AssetIssue::class, 'issue_id');
+    }
 }

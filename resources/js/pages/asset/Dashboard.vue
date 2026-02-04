@@ -1,13 +1,60 @@
 <script setup>
 import AppLayout1 from '@/layouts/AppLayout1.vue'
-import { Head, useForm } from '@inertiajs/vue3'
+import { Head, useForm, router } from '@inertiajs/vue3'
 import { ref, computed, watch } from 'vue'
 import { Input } from '@/components/ui/input'
 import InputError from '@/components/InputError.vue'
 
-defineProps({
+const props = defineProps({
     transactions: Object,
+    stocks: Object,
+    issues: Object,
+    lostItems: Object,
+    stats: Object,
+    filters: Object,
 })
+
+const filterType = ref(props.filters?.filter_type || 'all');
+const date = ref(props.filters?.date || '');
+const month = ref(props.filters?.month || '');
+
+const applyFilter = (type) => {
+    filterType.value = type;
+    date.value = '';
+    month.value = '';
+    
+    router.get(route('assets.index'), {
+        filter_type: type
+    }, {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true
+    });
+};
+
+const onDateChange = () => {
+    filterType.value = '';
+    month.value = '';
+    router.get(route('assets.index'), {
+        date: date.value
+    }, {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true
+    });
+};
+
+const onMonthChange = () => {
+    filterType.value = '';
+    date.value = '';
+    router.get(route('assets.index'), {
+        month: month.value
+    }, {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true
+    });
+};
 
 const showModal = ref(false)
 const showIssueModal = ref(false)
@@ -17,6 +64,13 @@ const spinBtn = ref(false)
 const issueModal = ref(false)
 const issuePreview = ref(null)
 const issueSpin = ref(false)
+const editingIssueId = ref(null)
+const currentStockId = ref(null)
+const lossModal = ref(false)
+const damageModal = ref(false)
+const activeLossIssueId = ref(null)
+const activeDamageIssueId = ref(null)
+const selectedIssue = ref(null)
 
 const form = useForm({
     product_name: '',
@@ -41,6 +95,53 @@ const issueForm = useForm({
     issue_date: null,
     remarks: ''
 })
+
+const lossForm = useForm({
+    quantity: '',
+    lost_date: '',
+    reported: '',
+})
+
+const damageForm = useForm({
+    quantity: '',
+    lost_date: '',
+    reported: '',
+})
+
+const editLossModal = ref(false)
+const editingLostId = ref(null)
+const editLossForm = useForm({
+    quantity: '',
+    lost_date: '',
+    reported: '',
+})
+
+const openEditLossModal = (lost) => {
+    if (!lost) return
+    editingLostId.value = lost.id
+    selectedIssue.value = lost.issue
+    editLossForm.quantity = lost.quantity
+    editLossForm.lost_date = lost.lost_date
+    editLossForm.reported = lost.reported
+    editLossModal.value = true
+}
+
+const submitEditLoss = () => {
+    if (!editingLostId.value) return
+    editLossForm.put(route('assets.lost.update', editingLostId.value), {
+        onSuccess: () => {
+            editLossModal.value = false
+            editLossForm.reset()
+            editingLostId.value = null
+            selectedIssue.value = null
+        }
+    })
+}
+
+const deleteLost = (lost) => {
+    if (!confirm('Are you sure?')) return
+    useForm({}).delete(route('assets.lost.destroy', lost.id))
+}
 
 const productSuggestions = ref([])
 const suggestOpen = ref(false)
@@ -68,6 +169,18 @@ const fetchProductSuggestions = async (query) => {
     } finally {
         suggestLoading.value = false
     }
+}
+
+const issuedQty = (stock) => {
+    if (!stock || !Array.isArray(stock.issues)) return 0
+    return stock.issues.reduce((sum, issue) => {
+        return sum + Number(issue.quantity || 0)
+    }, 0)
+}
+
+const currentQty = (stock) => {
+    const total = Number(stock?.quantity || 0)
+    return total - issuedQty(stock)
 }
 
 const isSelection = ref(false)
@@ -102,10 +215,16 @@ watch(
 )
 
 const createNewStock = () => {
+    editStock.value = false
+    currentStockId.value = null
+    form.reset()
+    preview.value = null
     showModal.value = true
 }
 
 const openIssueModal = () => {
+    editingIssueId.value = null
+    issueForm.reset()
     issueModal.value = true
 }
 
@@ -129,38 +248,188 @@ const handleIssueFile = (e) => {
     }
 }
 
-// Stock submit
-const submit = () => {
-    spinBtn.value = true
 
-    form.post(route('assets.store'), {
-        forceFormData: true,
-        onSuccess: () => {
-            spinBtn.value = false
-            showModal.value = false
-            form.reset()
-            preview.value = null
-        },
-        onError: () => {
-            spinBtn.value = false
-        },
-    })
-}
+
 
 // Issue submit
 const submitIssue = () => {
     issueSpin.value = true
 
-    issueForm.post(route('assets.issue.store'), {
-        forceFormData: true,
+    const isEdit = !!editingIssueId.value
+    const url = isEdit
+        ? route('assets.issue.update', editingIssueId.value)
+        : route('assets.issue.store')
+
+    const submitIssueAction = isEdit
+        ? () => issueForm.put(url, {
+            forceFormData: true,
+            onSuccess: () => {
+                issueSpin.value = false
+                issueModal.value = false
+                issueForm.reset()
+                issuePreview.value = null
+                editingIssueId.value = null
+            },
+            onError: () => {
+                issueSpin.value = false
+            },
+        })
+        : () => issueForm.post(url, {
+            forceFormData: true,
+            onSuccess: () => {
+                issueSpin.value = false
+                issueModal.value = false
+                issueForm.reset()
+                issuePreview.value = null
+                editingIssueId.value = null
+            },
+            onError: () => {
+                issueSpin.value = false
+            },
+        })
+
+    submitIssueAction()
+}
+
+const openIssueFromStock = (stock) => {
+    if (!stock) return
+    isSelection.value = true
+    productSuggestions.value = []
+    suggestOpen.value = false
+    issueForm.product_name = stock.product_name
+    issueModal.value = true
+}
+
+const openEditIssue = (issue) => {
+    if (!issue) return
+    isSelection.value = true
+    productSuggestions.value = []
+    suggestOpen.value = false
+    editingIssueId.value = issue.id
+    issueForm.product_name = issue.product_name
+    issueForm.location = issue.location
+    issueForm.name = issue.to_whom
+    issueForm.quantity = issue.quantity
+    issueForm.issue_date = issue.issue_date
+    issueModal.value = true
+}
+
+const deleteIssue = (id) => {
+    if (!id) return
+    if (!confirm('Are you sure you want to delete this issue?')) return
+    issueForm.delete(route('assets.issue.destroy', id))
+}
+
+const openEditStock = (stock) => {
+    if (!stock) return
+    editStock.value = true
+    currentStockId.value = stock.id
+    form.product_name = stock.product_name
+    form.product_category = stock.product_category
+    form.vendor = stock.vendor
+    form.quantity = stock.quantity
+    form.unit_price = stock.unit_price
+    form.total_price = stock.total_price
+    form.location = stock.location
+    form.has_warranty = !!stock.has_warranty
+    form.warranty_expiry_date = stock.warranty_expiry_date
+    preview.value = stock.photo ? `/storage/${stock.photo}` : null
+    showModal.value = true
+
+    console.log(form);
+}
+
+const submit = () => {
+    spinBtn.value = true
+
+    const isEdit = !!currentStockId.value
+    const url = isEdit
+        ? route('assets.update', currentStockId.value)
+        : route('assets.store')
+
+    const submitAction = isEdit
+        ? () => form.put(url, {
+            forceFormData: true,
+            onSuccess: () => {
+                spinBtn.value = false
+                showModal.value = false
+                form.reset()
+                preview.value = null
+                currentStockId.value = null
+                editStock.value = false
+            },
+            onError: () => {
+                spinBtn.value = false
+            },
+        })
+        : () => form.post(url, {
+            forceFormData: true,
+            onSuccess: () => {
+                spinBtn.value = false
+                showModal.value = false
+                form.reset()
+                preview.value = null
+                currentStockId.value = null
+                editStock.value = false
+            },
+            onError: () => {
+                spinBtn.value = false
+            },
+        })
+
+    submitAction()
+}
+
+const deleteStock = (id) => {
+    if (!id) return
+    if (!confirm('Are you sure you want to delete this stock?')) return
+    form.delete(route('assets.destroy', id))
+}
+
+const openLossModal = (issue) => {
+    if (!issue) return
+    activeLossIssueId.value = issue.id
+    selectedIssue.value = issue
+    lossForm.reset()
+    lossModal.value = true
+}
+
+const submitLoss = () => {
+    if (!activeLossIssueId.value) return
+    if (lossForm.quantity > selectedIssue.value?.quantity) {
+        alert(`Quantity cannot exceed ${selectedIssue.value?.quantity}`)
+        return
+    }
+    lossForm.post(route('assets.issue.lost', activeLossIssueId.value), {
         onSuccess: () => {
-            issueSpin.value = false
-            issueModal.value = false
-            issueForm.reset()
-            issuePreview.value = null
+            lossModal.value = false
+            lossForm.reset()
+            activeLossIssueId.value = null
+            selectedIssue.value = null
         },
-        onError: () => {
-            issueSpin.value = false
+    })
+}
+
+const openDamageModal = (issue) => {
+    if (!issue) return
+    activeDamageIssueId.value = issue.id
+    selectedIssue.value = issue
+    damageForm.reset()
+    damageModal.value = true
+}
+
+const submitDamage = () => {
+    if (!activeDamageIssueId.value) return
+    if (damageForm.quantity > selectedIssue.value?.quantity) {
+        alert(`Quantity cannot exceed ${selectedIssue.value?.quantity}`)
+        return
+    }
+    damageForm.post(route('assets.issue.damage', activeDamageIssueId.value), {
+        onSuccess: () => {
+            damageModal.value = false
+            damageForm.reset()
+            activeDamageIssueId.value = null
+            selectedIssue.value = null
         },
     })
 }
@@ -226,7 +495,7 @@ const submitIssue = () => {
                                 </a>
                             </li>
                             <li class="nav-item" role="presentation">
-                                <a class="nav-link" data-bs-toggle="tab" href="#issuelist" role="tab" aria-selected="false">
+                                <a class="nav-link" data-bs-toggle="tab" href="#idelist" role="tab" aria-selected="false">
                                     <div class="d-flex align-items-center">
                                         <div class="tab-icon"><i class='bx bx-microphone font-18 me-1'></i></div>
                                         <div class="tab-title">নষ্ট আইটেম</div>
@@ -234,7 +503,7 @@ const submitIssue = () => {
                                 </a>
                             </li>
                             <li class="nav-item" role="presentation">
-                                <a class="nav-link" data-bs-toggle="tab" href="#issuelist" role="tab" aria-selected="false">
+                                <a class="nav-link" data-bs-toggle="tab" href="#lostlist" role="tab" aria-selected="false">
                                     <div class="d-flex align-items-center">
                                         <div class="tab-icon"><i class='bx bx-microphone font-18 me-1'></i></div>
                                         <div class="tab-title">হারানো আইটেম</div>
@@ -245,6 +514,20 @@ const submitIssue = () => {
 
                         <div class="tab-content py-3">
                             <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
+                                <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn" :class="filterType === 'today' ? 'btn-primary' : 'btn-outline-primary'" @click="applyFilter('today')">আজকের হিসাব</button>
+                                        <button type="button" class="btn" :class="filterType === 'last_7_days' ? 'btn-success' : 'btn-outline-success'" @click="applyFilter('last_7_days')">গত ৭ দিনের হিসাব</button>
+                                        <button type="button" class="btn" :class="filterType === 'last_15_days' ? 'btn-info' : 'btn-outline-info'" @click="applyFilter('last_15_days')">গত ১৫ দিনের হিসাব</button>
+                                        <button type="button" class="btn" :class="filterType === 'all' ? 'btn-warning' : 'btn-outline-warning'" @click="applyFilter('all')">সর্বমোট হিসাব</button>
+                                    </div>
+                                    
+                                    <div class="d-flex gap-2">
+                                        <input type="month" class="form-control" v-model="month" @change="onMonthChange" placeholder="মাস">
+                                        <input type="date" class="form-control" v-model="date" @change="onDateChange" placeholder="তারিখ">
+                                    </div>
+                                </div>
+
                                 <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4">
                                     <div class="col">
                                         <div class="card radius-10 border-start border-0 border-4 border-info">
@@ -252,8 +535,8 @@ const submitIssue = () => {
                                                 <div class="d-flex align-items-center">
                                                     <div>
                                                         <p class="mb-0 text-secondary">মোট অ্যাসেট</p>
-                                                        <h4 class="my-1 text-info">4805</h4>
-                                                        <p class="mb-0 font-13">+2.5% from last week</p>
+                                                        <h4 class="my-1 text-info">{{ stats.total_asset }}</h4>
+                                                        <p class="mb-0 font-13"></p>
                                                     </div>
                                                     <div class="widgets-icons-2 rounded-circle bg-gradient-blues text-white ms-auto"><i class='bx bxs-home'></i></div>
                                                 </div>
@@ -262,12 +545,12 @@ const submitIssue = () => {
                                     </div>
                                     <div class="col">
                                         <div class="card radius-10 border-start border-0 border-4 border-danger">
-                                            <div class="card-body">
+                                                    <div class="card-body">
                                                 <div class="d-flex align-items-center">
                                                     <div>
                                                         <p class="mb-0 text-secondary">বর্তমান স্টক</p>
-                                                        <h4 class="my-1 text-danger">$84,245</h4>
-                                                        <p class="mb-0 font-13">+5.4% from last week</p>
+                                                        <h4 class="my-1 text-danger">{{ stats.present_asset }}</h4>
+                                                        <p class="mb-0 font-13"></p>
                                                     </div>
                                                     <div class="widgets-icons-2 rounded-circle bg-gradient-burning text-white ms-auto"><i class='bx bx-check'></i></div>
                                                 </div>
@@ -280,8 +563,8 @@ const submitIssue = () => {
                                                 <div class="d-flex align-items-center">
                                                     <div>
                                                         <p class="mb-0 text-secondary">নষ্ট আইটেম</p>
-                                                        <h4 class="my-1 text-success">34.6%</h4>
-                                                        <p class="mb-0 font-13">-4.5% from last week</p>
+                                                        <h4 class="my-1 text-success">{{ stats.damage_asset }}</h4>
+                                                        <p class="mb-0 font-13"></p>
                                                     </div>
                                                     <div class="widgets-icons-2 rounded-circle bg-gradient-ohhappiness text-white ms-auto"><i class='bx bxs-alert-triangle' ></i></div>
                                                 </div>
@@ -294,8 +577,8 @@ const submitIssue = () => {
                                                 <div class="d-flex align-items-center">
                                                     <div>
                                                         <p class="mb-0 text-secondary">হারানো আইটেম</p>
-                                                        <h4 class="my-1 text-warning">8.4K</h4>
-                                                        <p class="mb-0 font-13">+8.4% from last week</p>
+                                                        <h4 class="my-1 text-warning">{{ stats.lost_asset }}</h4>
+                                                        <p class="mb-0 font-13"></p>
                                                     </div>
                                                     <div class="widgets-icons-2 rounded-circle bg-gradient-orange text-white ms-auto"><i class='bx bx-minus'></i></div>
                                                 </div>
@@ -353,6 +636,52 @@ const submitIssue = () => {
                                                 </tr>
                                             </thead>
                                             <tbody>
+                                                <tr v-for="(stock, index) in stocks.data" :key="stock.id">
+                                                    <td>{{ index + 1 }}</td>
+                                                    <td>
+                                                        <img
+                                                            v-if="stock.photo"
+                                                            :src="`/storage/${stock.photo}`"
+                                                            alt=""
+                                                            width="40"
+                                                        >
+                                                    </td>
+                                                    <td>{{ stock.product_name }}</td>
+                                                    <td>{{ stock.product_category }}</td>
+                                                    <td>{{ stock.quantity }}</td>
+                                                    <td>{{ currentQty(stock) }}</td>
+                                                    <td>{{ issuedQty(stock) }}</td>
+                                                    <td>0</td>
+                                                    <td>0</td>
+                                                    <td>{{ stock.unit_price }}</td>
+                                                    <td>{{ stock.total_price }}</td>
+                                                    
+                                                    <td>
+                                                        <div class="dropdown dropstart">
+                                                            <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                                <i class="bx bx-dots-vertical-rounded"></i>
+                                                            </button>
+                                                            <ul class="dropdown-menu">
+                                                                <li>
+                                                                    <a class="dropdown-item" href="#" @click="openEditStock(stock)">
+                                                                        <i class="bx bx-box"></i>
+                                                                        আপডেট করুণ
+                                                                    </a>
+                                                                </li>
+                                                                <li><a class="dropdown-item" href="#" @click.prevent="deleteStock(stock.id)">
+                                                                    <i class="bx bx-trash"></i>
+                                                                    চালান মুছে ফেলুন
+                                                                </a></li>
+                                                                <li>
+                                                                    <a class="dropdown-item" href="#" @click="openIssueFromStock(stock)">
+                                                                        <i class="bx bx-show"></i> 
+                                                                        ইসু করুন
+                                                                    </a>
+                                                                </li>
+                                                            </ul>
+                                                        </div>
+                                                    </td>
+                                                </tr>
                                             </tbody>
                                         </table>
                                    </div>
@@ -376,6 +705,128 @@ const submitIssue = () => {
                                                 </tr>
                                             </thead>
                                             <tbody>
+                                                <tr v-for="(issue, index) in issues.data" :key="issue.id">
+                                                    <td>{{ index + 1 }}</td>
+                                                    <td>
+                                                        <img
+                                                            v-if="issue.stock && issue.stock.photo"
+                                                            :src="`/storage/${issue.stock.photo}`"
+                                                            alt=""
+                                                            width="40"
+                                                        >
+                                                    </td>
+                                                    <td>{{ issue.product_name }}</td>
+                                                    <td>{{ issue.product_category }}</td>
+                                                    <td>{{ issue.to_whom }}</td>
+                                                    <td>{{ issue.location }}</td>
+                                                    <td>{{ issue.quantity }}</td>
+                                                    <td>{{ issue.issue_date }}</td>
+                                                    <!-- <td>
+                                                        <button
+                                                            type="button"
+                                                            class="btn btn-sm btn-success me-1"
+                                                            @click="openEditIssue(issue)"
+                                                        >
+                                                            আপডেট
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            class="btn btn-sm btn-danger me-1"
+                                                            @click="deleteIssue(issue.id)"
+                                                        >
+                                                            ডিলিট
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            class="btn btn-sm btn-warning me-1"
+                                                            @click="openLossModal(issue)"
+                                                        >
+                                                            লস্ট
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            class="btn btn-sm btn-secondary"
+                                                            @click="openDamageModal(issue)"
+                                                        >
+                                                            ডেমেজ
+                                                        </button>
+                                                    </td> -->
+                                                    <td>
+                                                        <div class="dropdown dropstart">
+                                                            <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                                <i class="bx bx-dots-vertical-rounded"></i>
+                                                            </button>
+                                                            <ul class="dropdown-menu">
+                                                                <li>
+                                                                    <a class="dropdown-item" href="#" @click="openEditStock(stock)">
+                                                                        <i class="bx bx-box"></i>আপডেট করুণ
+                                                                    </a>
+                                                                </li>
+                                                                <li><a class="dropdown-item" href="#" @click.prevent="deleteStock(stock.id)">
+                                                                    <i class="bx bx-trash"></i>চালান মুছে ফেলুন
+                                                                </a></li>
+                                                                <li>
+                                                                    <a class="dropdown-item" href="#" @click="openLossModal(issue)">
+                                                                        <i class="bx bx-show"></i> লস্ট আইটেম 
+                                                                    </a>
+                                                                </li>
+                                                                <li>
+                                                                    <a class="dropdown-item" href="#" @click="openDamageModal(issue)">
+                                                                        <i class="bx bx-show"></i> ডেমেজ আইটেম 
+                                                                    </a>
+                                                                </li>
+                                                            </ul>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                   </div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="lostlist" role="tabpanel">
+                                <div class="row">
+                                   <div class="col-md-12">
+                                       <table class="table table-striped table-bordered dataTable" style="width: 100%; font-size: small;">
+                                            <thead class="bg-primary text-white">
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th>প্রোডাক্ট</th>
+                                                    <th>ক্যাটাগরি</th>
+                                                    <th>পরিমাণ</th>
+                                                    <th>তারিখ</th>
+                                                    <th>রিপোর্টেড পারসন</th>
+                                                    <th>অ্যাকশন</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="(lost, index) in lostItems?.data" :key="lost.id">
+                                                    <td>{{ index + 1 }}</td>
+                                                    <td>{{ lost.product_name }}</td>
+                                                    <td>{{ lost.product_category }}</td>
+                                                    <td>{{ lost.quantity }}</td>
+                                                    <td>{{ lost.lost_date }}</td>
+                                                    <td>{{ lost.reported }}</td>
+                                                    <td>
+                                                        <div class="dropdown dropstart">
+                                                            <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                                <i class="bx bx-dots-vertical-rounded"></i>
+                                                            </button>
+                                                            <ul class="dropdown-menu">
+                                                                <li>
+                                                                    <a class="dropdown-item" href="#" @click="openEditLossModal(lost)">
+                                                                        <i class="bx bx-edit"></i> আপডেট করুণ
+                                                                    </a>
+                                                                </li>
+                                                                <li>
+                                                                    <a class="dropdown-item" href="#" @click.prevent="deleteLost(lost)">
+                                                                        <i class="bx bx-trash"></i> ডিলিট করুণ
+                                                                    </a>
+                                                                </li>
+                                                            </ul>
+                                                        </div>
+                                                    </td>
+                                                </tr>
                                             </tbody>
                                         </table>
                                    </div>
@@ -791,9 +1242,225 @@ const submitIssue = () => {
                 </div>
             </transition>
 
+            <transition name="modal">
+                <div class="modal-backdrop" v-if="lossModal"></div>
+            </transition>
+
+            <transition name="slide-fade">
+                <div class="modal d-block" v-if="lossModal">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header" style="border-top: 2px solid #ffc107;">
+                                <h6 class="modal-title">
+                                    অ্যাসেট লস্ট
+                                </h6>
+                                <button type="button" class="btn-close" @click="lossModal = false"></button>
+                            </div>
+
+                            <form @submit.prevent="submitLoss">
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">প্রোডাক্টের নাম</label>
+                                        <input type="text"  :value="selectedIssue?.product_name" class="form-control form-control-sm" readonly disabled>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">পরিমাণ (সর্বোচ্চ: {{ selectedIssue?.quantity }})</label>
+                                        <Input
+                                            type="number"
+                                            min="1"
+                                            :max="selectedIssue?.quantity"
+                                            v-model="lossForm.quantity"
+                                            class="form-control form-control-sm"
+                                            :class="lossForm.errors.quantity ? 'border-danger mb-1' : ''"
+                                        />
+                                        <InputError :message="lossForm.errors.quantity" />
+                                        <small v-if="lossForm.quantity > selectedIssue?.quantity" class="text-danger">
+                                            পরিমাণ {{ selectedIssue?.quantity }} এর বেশি হতে পারবে না
+                                        </small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">তারিখ</label>
+                                        <Input
+                                            type="date"
+                                            v-model="lossForm.lost_date"
+                                            class="form-control form-control-sm"
+                                            :class="lossForm.errors.lost_date ? 'border-danger mb-1' : ''"
+                                        />
+                                        <InputError :message="lossForm.errors.lost_date" />
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">রিপোর্টেড পারসন</label>
+                                        <Input
+                                            type="text"
+                                            v-model="lossForm.reported"
+                                            class="form-control form-control-sm"
+                                            :class="lossForm.errors.reported ? 'border-danger mb-1' : ''"
+                                        />
+                                        <InputError :message="lossForm.errors.reported" />
+                                    </div>
+                                </div>
+
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary btn-sm" @click="lossModal = false">
+                                        Close
+                                    </button>
+                                    <button type="submit" class="btn btn-warning btn-sm">
+                                        <i class="bx bx-save me-1"></i> Save
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </transition>
+
+            <transition name="modal">
+                <div class="modal-backdrop" v-if="editLossModal"></div>
+            </transition>
+
+            <transition name="slide-fade">
+                <div class="modal d-block" v-if="editLossModal">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header" style="border-top: 2px solid #0dcaf0;">
+                                <h6 class="modal-title">
+                                    আপডেট লস্ট আইটেম
+                                </h6>
+                                <button type="button" class="btn-close" @click="editLossModal = false"></button>
+                            </div>
+
+                            <form @submit.prevent="submitEditLoss">
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">প্রোডাক্টের নাম</label>
+                                        <input type="text" :value="selectedIssue?.product_name" class="form-control form-control-sm" readonly disabled>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">পরিমাণ (সর্বোচ্চ: {{ selectedIssue?.quantity }})</label>
+                                        <Input
+                                            type="number"
+                                            min="1"
+                                            :max="selectedIssue?.quantity"
+                                            v-model="editLossForm.quantity"
+                                            class="form-control form-control-sm"
+                                            :class="editLossForm.errors.quantity ? 'border-danger mb-1' : ''"
+                                        />
+                                        <InputError :message="editLossForm.errors.quantity" />
+                                        <small v-if="editLossForm.quantity > selectedIssue?.quantity" class="text-danger">
+                                            পরিমাণ {{ selectedIssue?.quantity }} এর বেশি হতে পারবে না
+                                        </small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">তারিখ</label>
+                                        <Input
+                                            type="date"
+                                            v-model="editLossForm.lost_date"
+                                            class="form-control form-control-sm"
+                                            :class="editLossForm.errors.lost_date ? 'border-danger mb-1' : ''"
+                                        />
+                                        <InputError :message="editLossForm.errors.lost_date" />
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">রিপোর্টেড পারসন</label>
+                                        <Input
+                                            type="text"
+                                            v-model="editLossForm.reported"
+                                            class="form-control form-control-sm"
+                                            :class="editLossForm.errors.reported ? 'border-danger mb-1' : ''"
+                                        />
+                                        <InputError :message="editLossForm.errors.reported" />
+                                    </div>
+                                </div>
+
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary btn-sm" @click="editLossModal = false">
+                                        Close
+                                    </button>
+                                    <button type="submit" class="btn btn-info btn-sm text-white">
+                                        <i class="bx bx-save me-1"></i> Update
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </transition>
+
+            <transition name="modal">
+                <div class="modal-backdrop" v-if="damageModal"></div>
+            </transition>
+
+            <transition name="slide-fade">
+                <div class="modal d-block" v-if="damageModal">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header" style="border-top: 2px solid #6c757d;">
+                                <h6 class="modal-title">
+                                    অ্যাসেট ডেমেজ
+                                </h6>
+                                <button type="button" class="btn-close" @click="damageModal = false"></button>
+                            </div>
+
+                            <form @submit.prevent="submitDamage">
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">প্রোডাক্টের নাম</label>
+                                        <input type="text" :value="selectedIssue?.product_name" class="form-control form-control-sm" readonly disabled>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">পরিমাণ (সর্বোচ্চ: {{ selectedIssue?.quantity }})</label>
+                                        <Input
+                                            type="number"
+                                            min="1"
+                                            :max="selectedIssue?.quantity"
+                                            v-model="damageForm.quantity"
+                                            class="form-control form-control-sm"
+                                            :class="damageForm.errors.quantity ? 'border-danger mb-1' : ''"
+                                        />
+                                        <InputError :message="damageForm.errors.quantity" />
+                                        <small v-if="damageForm.quantity > selectedIssue?.quantity" class="text-danger">
+                                            পরিমাণ {{ selectedIssue?.quantity }} এর বেশি হতে পারবে না
+                                        </small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">তারিখ</label>
+                                        <Input
+                                            type="date"
+                                            v-model="damageForm.lost_date"
+                                            class="form-control form-control-sm"
+                                            :class="damageForm.errors.lost_date ? 'border-danger mb-1' : ''"
+                                        />
+                                        <InputError :message="damageForm.errors.lost_date" />
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">নোট</label>
+                                        <Input
+                                            type="text"
+                                            v-model="damageForm.reported"
+                                            class="form-control form-control-sm"
+                                            :class="damageForm.errors.reported ? 'border-danger mb-1' : ''"
+                                        />
+                                        <InputError :message="damageForm.errors.reported" />
+                                    </div>
+                                </div>
+
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary btn-sm" @click="damageModal = false">
+                                        Close
+                                    </button>
+                                    <button type="submit" class="btn btn-secondary btn-sm">
+                                        <i class="bx bx-save me-1"></i> Save
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </transition>
+
 
         </div>
-    </AppLayout1>
+        </AppLayout1>
 </template>
 
 <style scoped>

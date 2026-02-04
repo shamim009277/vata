@@ -16,6 +16,7 @@ use App\Http\Controllers\RowProductionController;
 use App\Http\Controllers\StockListController;
 use App\Http\Controllers\SubscriptionPlanController;
 use App\Http\Controllers\UnloadController;
+use App\Http\Controllers\DeliveryChallanController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -78,7 +79,31 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('unloads', UnloadController::class);
     Route::resource('assets', AssetsController::class);
     Route::post('asset/issue/store',[AssetsController::class,'issueStore'])->name('assets.issue.store');
+    Route::put('asset/issue/{issue}',[AssetsController::class,'issueUpdate'])->name('assets.issue.update');
+    Route::delete('asset/issue/{issue}',[AssetsController::class,'issueDestroy'])->name('assets.issue.destroy');
+    Route::post('asset/issue/{issue}/lost',[AssetsController::class,'issueLost'])->name('assets.issue.lost');
+    Route::put('asset/lost/{lost}',[AssetsController::class,'lostUpdate'])->name('assets.lost.update');
+    Route::delete('asset/lost/{lost}',[AssetsController::class,'lostDestroy'])->name('assets.lost.destroy');
+    Route::post('asset/issue/{issue}/damage',[AssetsController::class,'issueDamage'])->name('assets.issue.damage');
     Route::get('assets/products/search', [AssetsController::class, 'productsSearch'])->name('assets.products.search');
+    Route::resource('customers', \App\Http\Controllers\CustomerController::class);
+
+    Route::get('delivery-challans/create', [DeliveryChallanController::class, 'create'])->name('delivery-challans.create');
+    Route::post('delivery-challans', [DeliveryChallanController::class, 'store'])->name('delivery-challans.store');
+    Route::get('delivery-challans/invoice-items/{invoice}', [DeliveryChallanController::class, 'getInvoiceItems'])->name('delivery-challans.invoice-items');
+
+    // Vehicle Management Routes
+    Route::get('vehicles/dashboard', [App\Http\Controllers\VehicleController::class, 'dashboard'])->name('vehicles.dashboard');
+    Route::resource('vehicles', App\Http\Controllers\VehicleController::class);
+    Route::resource('vehicle-trips', App\Http\Controllers\VehicleTripController::class)->parameters([
+        'vehicle-trips' => 'trip'
+    ]);
+    Route::resource('vehicle-fuels', App\Http\Controllers\VehicleFuelController::class)->parameters([
+        'vehicle-fuels' => 'fuel'
+    ]);
+    Route::resource('vehicle-services', App\Http\Controllers\VehicleServiceController::class)->parameters([
+        'vehicle-services' => 'service'
+    ]);
 });
 
 require __DIR__.'/settings.php';

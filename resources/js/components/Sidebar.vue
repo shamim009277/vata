@@ -17,14 +17,19 @@
                     </a>
                     <ul class="mm-collapse" :class="{ 'mm-show': activeIndex === index }">
                         <li v-for="(child, i) in menu.children" :key="i">
-                            <Link :href="route(child.route)"><i class="bx bx-right-arrow-alt"></i> {{ child.label }}</Link>
+                            <a v-if="child.external" :href="child.url" target="_blank"><i class="bx bx-right-arrow-alt"></i> {{ child.label }}</a>
+                            <Link v-else :href="route(child.route)"><i class="bx bx-right-arrow-alt"></i> {{ child.label }}</Link>
                         </li>
                     </ul>
                 </template>
 
                 <!-- If no children -->
                 <template v-else>
-                    <Link :href="route(menu.route)">
+                    <a v-if="menu.external" :href="menu.url" target="_blank">
+                        <div class="parent-icon"><i :class="menu.icon"></i></div>
+                        <div class="menu-title">{{ menu.title }}</div>
+                    </a>
+                    <Link v-else :href="route(menu.route)">
                         <div class="parent-icon"><i :class="menu.icon"></i></div>
                         <div class="menu-title">{{ menu.title }}</div>
                     </Link>
@@ -51,6 +56,16 @@ const menus = [
         title: 'ড্যাশবোর্ড',
         icon: 'bx bx-home-circle',
         route: 'dashboard',
+    },
+    {
+        title: 'কাস্টমার',
+        icon: 'bx bx-user-circle',
+        route: 'customers.index',
+    },
+    {
+        title: 'গাড়ির হিসাব',
+        icon: 'bx bx-car',
+        route: 'vehicles.dashboard',
     },
     {
         title: 'Subscription',
@@ -99,6 +114,27 @@ const menus = [
         title: 'আনলোড',
         icon: 'bx bx-bar-chart',
         route: 'unloads.index',
+    },
+    {
+        title: 'মালামাল স্টক',
+        icon: 'bx bx-bar-chart',
+        route: 'assets.index',
+    },
+    {
+        title: 'আবহাওয়া',
+        icon: 'bx bx-cloud-light-rain',
+        children: [
+            {
+                label: '১০ দিনের আবহাওয়া',
+                external: true,
+                url: 'https://weather.com/weather/tenday/l/3c8d640dae52e6fe935bb35b95ee5dfbb31b395253882e2578f216c762e22c62',
+            },
+            {
+                label: 'আজকের আবহাওয়া',
+                external: true,
+                url: 'https://weather.com/weather/hourbyhour/l/3c8d640dae52e6fe935bb35b95ee5dfbb31b395253882e2578f216c762e22c62',
+            },
+        ],
     },
     {
         title: 'সেটিং',
