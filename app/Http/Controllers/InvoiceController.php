@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\DeliveryRequest;
 use App\Http\Requests\InvoiceRequest;
+use App\Models\BusinessStore;
 use App\Models\Customer;
 use App\Models\Delivery;
 use App\Models\Invoice;
@@ -78,6 +79,7 @@ class InvoiceController extends Controller
             'items' => $items,
             'invoiceNumber' => $invoiceNumber,
             'deliveryNumber' => $deliveryNumber,
+            'business_store' => BusinessStore::first(),
             'filters' => [
                 'search' => $search,
                 'date' => $date,
@@ -143,6 +145,7 @@ class InvoiceController extends Controller
             'items' => $items,
             'invoiceNumber' => $invoiceNumber,
             'deliveryNumber' => $deliveryNumber,
+            'business_store' => BusinessStore::first(),
             'filters' => [
                 'search' => $search,
                 'perPage' => $perPage,
@@ -205,6 +208,7 @@ class InvoiceController extends Controller
             'items' => $items,
             'invoiceNumber' => $invoiceNumber,
             'deliveryNumber' => $deliveryNumber,
+            'business_store' => BusinessStore::first(),
             'filters' => [
                 'search' => $search,
                 'perPage' => $perPage,

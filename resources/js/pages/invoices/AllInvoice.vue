@@ -12,6 +12,7 @@ const props = defineProps({
     items: Object,
     invoiceNumber: String,
     deliveryNumber: String,
+    business_store: Object,
 });
 
 
@@ -172,6 +173,221 @@ const addRow = () => {
         quantity: 0,
         amount: 0,
     });
+};
+
+const printChallan = (invoice) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const formatDate = (dateString) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return dateString;
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}-${month}-${year}`;
+    };
+
+    const formatTime12Hour = (dateString) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return '';
+        let hours = date.getHours();
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12 || 12;
+        return `${hours}:${minutes}:${seconds} ${ampm}`;
+    };
+
+    const invoiceDetailsHtml = (title) => `
+        <div class="challan-box">
+            <div class="header">
+                <div class="title-section">
+                    <div class="copy-title">${title}</div>
+                    <div class="challan-info">
+                        <p><strong>চালান নং:</strong> ${invoice.invoice_no}</p>
+                        <p><strong>তৈরি করেছেন:</strong> ${invoice.creator?.name || ''}</p>
+                    </div>
+                </div>
+                <div class="company-info">
+                    <h1 class="company-name">${props.business_store?.store_name || 'এম.এম.বি ব্রিকস'}</h1>
+                <p class="company-address">${props.business_store?.address || 'মাস্টারবাড়ি মির্জাপুর জয়দেবপুর'}</p>
+                <p class="company-phone">মোবাইল: ${props.business_store?.phone || '01457636958,01746345643'}</p>
+                </div>
+            </div>
+            
+            <div class="info-grid">
+                <div class="customer-section">
+                    <div class="info-box">
+                        <p><strong>কাস্টমার:</strong> ${invoice.customer?.name || ''}</p>
+                        <p><strong>ফোন:</strong> ${invoice.customer?.phone || ''}</p>
+                        <p><strong>ঠিকানা:</strong> ${invoice.customer?.address || ''}</p>
+                    </div>
+                </div>
+                <div class="invoice-meta text-right">
+                    <div class="info-box">
+                        <p><strong>তারিখ:</strong> ${formatDate(invoice.invoice_date)}</p>
+                        <p><strong>সময়:</strong> ${formatTime12Hour(invoice.created_at)}</p>
+                        <p><strong>সিজন:</strong> ${invoice.season || ''}</p>
+                        <p><strong>চালানের ধরণ:</strong> ${invoice.invoice_type || ''}</p>
+                        <p><strong>ডেলিভারি তারিখ:</strong> ${formatDate(invoice.delivery_date)}</p>
+                    </div>
+                </div>
+            </div>
+
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th style="width: 5%">#</th>
+                        <th style="width: 40%">বিবরণ</th>
+                        <th style="width: 15%">রেট</th>
+                        <th style="width: 20%">পরিমাণ</th>
+                        <th style="width: 20%">টাকা</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${invoice.invoice_details.map((item, index) => `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>${item.item?.name || ''}</td>
+                            <td>${item.rate}</td>
+                            <td>${item.quantity}</td>
+                            <td>${item.amount}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+
+            <div class="footer-section">
+                <div class="payment-status">
+                    <div class="status-box ${invoice.due_amount > 0 ? 'due' : 'paid'}">
+                        ${invoice.due_amount > 0 
+                            ? `<h4 class="text-danger">বাকি: ${invoice.due_amount}</h4><p>পরিশোধের তারিখ: ${formatDate(invoice.next_payment_date)}</p>` 
+                            : '<h4 class="text-success">পরিশোধিত</h4>'}
+                    </div>
+                </div>
+                <div class="totals-section">
+                    <table class="totals-table">
+                        <tr><th>মোট মূল্য:</th><td>${parseFloat(invoice.invoice_details.reduce((total, item) => Number(total) + Number(item.amount), 0)).toFixed(2)}</td></tr>
+                        <tr><th>গাড়ি ভাড়া:</th><td>${Number(invoice.rant).toFixed(2)}</td></tr>
+                        <tr><th>ছাড়:</th><td>${Number(invoice.discount).toFixed(2)}</td></tr>
+                        <tr class="grand-total"><th>সর্বমোট:</th><td>${Number(invoice.total_amount).toFixed(2)}</td></tr>
+                        <tr><th>জমা:</th><td>${Number(invoice.paid_amount).toFixed(2)}</td></tr>
+                        <tr><th>বাকি:</th><td>${Number(invoice.due_amount).toFixed(2)}</td></tr>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="signatures">
+                <div class="sig-box"><p>গ্রহীতার স্বাক্ষর</p></div>
+                <div class="sig-box"><p>কর্তৃপক্ষের স্বাক্ষর</p></div>
+            </div>
+            
+            <div class="watermark">PAID</div>
+        </div>
+    `;
+
+    const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>চালান - ${invoice.invoice_no}</title>
+            <style>
+                @page { size: A4 landscape; margin: 10mm; }
+                body { font-family: 'Bangla', sans-serif; margin: 0; padding: 0; background: #fff; }
+                .container { display: flex; gap: 20mm; width: 100%; height: 100%; box-sizing: border-box; }
+                .challan-box { 
+                    flex: 1; 
+                    border: 1px solid #333; 
+                    padding: 20px; 
+                    position: relative; 
+                    height: 100%; 
+                    box-sizing: border-box; 
+                    background: #fff;
+                    display: flex;
+                    flex-direction: column;
+                }
+                
+                .header { display: flex; justify-content: space-between; border-bottom: 2px solid #004882; padding-bottom: 10px; margin-bottom: 15px; }
+                .company-info { text-align: right; }
+                .company-name { font-size: 24px; font-weight: bold; margin: 0; color: #2c3e50; }
+                .company-address { font-size: 12px; margin: 0; color: #2c3e50; }
+                .company-phone { font-size: 12px; margin: 0; font-weight: bold; color: #2c3e50; }
+                
+                .title-section { display: flex; flex-direction: column; gap: 5px; }
+                .copy-title { 
+                    font-size: 14px; 
+                    font-weight: bold; 
+                    background: #004882; 
+                    color: #fff; 
+                    padding: 4px 12px; 
+                    border-radius: 4px; 
+                    width: fit-content;
+                }
+                .challan-info p { margin: 2px 0; font-size: 13px; }
+                
+                .info-grid { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 20px; }
+                .info-box { background: #f9f9f9; padding: 10px; border-radius: 6px; border: 1px solid #eee; }
+                .info-box p { margin: 4px 0; }
+                .text-right { text-align: right; }
+                
+                .table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px; }
+                .table th { background-color: #004882; color: #fff; padding: 8px; text-align: left; border: 1px solid #004882; }
+                .table td { border: 1px solid #ddd; padding: 8px; }
+                .table tr:nth-child(even) { background-color: #f9f9f9; }
+                
+                .footer-section { display: flex; justify-content: space-between; margin-top: auto; padding-top: 20px; border-top: 1px solid #eee; }
+                .status-box { padding: 15px; border: 2px solid #ddd; border-radius: 8px; text-align: center; min-width: 150px; }
+                .status-box.due { border-color: #dc3545; color: #dc3545; }
+                .status-box.paid { border-color: #198754; color: #198754; }
+                .status-box h4 { margin: 0 0 5px 0; font-size: 18px; }
+                .status-box p { margin: 0; font-size: 12px; color: #666; }
+                
+                .totals-table { width: 100%; font-size: 13px; border-collapse: collapse; }
+                .totals-table th { text-align: left; padding: 4px 15px 4px 0; color: #666; }
+                .totals-table td { text-align: right; font-weight: bold; }
+                .totals-table .grand-total { border-top: 1px solid #ccc; border-bottom: 1px double #ccc; }
+                .totals-table .grand-total th, .totals-table .grand-total td { padding: 8px 0; color: #004882; font-size: 14px; }
+                
+                .signatures { display: flex; justify-content: space-between; margin-top: 50px; font-size: 13px; }
+                .sig-box { border-top: 1px solid #333; padding-top: 5px; width: 40%; text-align: center; color: #333; }
+                
+                .watermark {
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%) rotate(-45deg);
+                    font-size: 80px;
+                    color: rgba(0,0,0,0.03);
+                    font-weight: bold;
+                    pointer-events: none;
+                    z-index: 0;
+                    display: ${invoice.due_amount <= 0 ? 'block' : 'none'};
+                }
+                
+                /* Print specific adjustments */
+                @media print {
+                    body { -webkit-print-color-adjust: exact; }
+                    .container { gap: 10mm; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                ${invoiceDetailsHtml('কাস্টমার কপি')}
+                ${invoiceDetailsHtml('অফিস কপি')}
+            </div>
+            <script>
+                window.onload = function() { setTimeout(function() { window.print(); }, 500); }
+            <\/script>
+        </body>
+        </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
 };
 
 const showInvoiceDetails = (invoice) => {
@@ -461,6 +677,12 @@ onMounted(() => {
                                                         <i class="bx bx-dots-vertical-rounded"></i>
                                                     </button>
                                                     <ul class="dropdown-menu">
+                                                        <li>
+                                                            <a class="dropdown-item" href="#" @click="printChallan(invoice)">
+                                                                <i class="bx bx-printer"></i> 
+                                                                প্রিন্ট চালান
+                                                            </a>
+                                                        </li>
                                                         <li>
                                                             <a class="dropdown-item" href="#" @click="showUpdateDetails(invoice)">
                                                                 <i class="bx bx-box"></i>

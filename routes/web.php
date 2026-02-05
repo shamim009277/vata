@@ -92,6 +92,16 @@ Route::middleware(['auth'])->group(function () {
     Route::post('delivery-challans', [DeliveryChallanController::class, 'store'])->name('delivery-challans.store');
     Route::get('delivery-challans/invoice-items/{invoice}', [DeliveryChallanController::class, 'getInvoiceItems'])->name('delivery-challans.invoice-items');
 
+    // Administration Routes
+    Route::group(['prefix' => 'admin', 'as' => 'admin.'], function () {
+        Route::resource('menus', App\Http\Controllers\Admin\MenuController::class);
+        Route::resource('roles', App\Http\Controllers\Admin\RoleController::class);
+        Route::resource('permissions', App\Http\Controllers\Admin\PermissionController::class);
+        Route::resource('users', App\Http\Controllers\Admin\UserController::class);
+    });
+
+    Route::resource('delivery-challans', DeliveryChallanController::class)->except(['create', 'store']);
+
     // Vehicle Management Routes
     Route::get('vehicles/dashboard', [App\Http\Controllers\VehicleController::class, 'dashboard'])->name('vehicles.dashboard');
     Route::resource('vehicles', App\Http\Controllers\VehicleController::class);

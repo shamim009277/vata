@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Menu;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -51,6 +52,9 @@ class HandleInertiaRequests extends Middleware
                 'location' => $request->url(),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'menus' => Menu::whereNull('parent_id')->with(['children' => function($query) {
+                $query->where('is_active', true)->orderBy('order');
+            }])->where('is_active', true)->orderBy('order')->get(),
         ];
     }
 }

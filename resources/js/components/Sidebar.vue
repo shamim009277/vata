@@ -17,15 +17,15 @@
                     </a>
                     <ul class="mm-collapse" :class="{ 'mm-show': activeIndex === index }">
                         <li v-for="(child, i) in menu.children" :key="i">
-                            <a v-if="child.external" :href="child.url" target="_blank"><i class="bx bx-right-arrow-alt"></i> {{ child.label }}</a>
-                            <Link v-else :href="route(child.route)"><i class="bx bx-right-arrow-alt"></i> {{ child.label }}</Link>
+                            <a v-if="child.url" :href="child.url" target="_blank"><i class="bx bx-right-arrow-alt"></i> {{ child.title }}</a>
+                            <Link v-else :href="route(child.route)"><i class="bx bx-right-arrow-alt"></i> {{ child.title }}</Link>
                         </li>
                     </ul>
                 </template>
 
                 <!-- If no children -->
                 <template v-else>
-                    <a v-if="menu.external" :href="menu.url" target="_blank">
+                    <a v-if="menu.url" :href="menu.url" target="_blank">
                         <div class="parent-icon"><i :class="menu.icon"></i></div>
                         <div class="menu-title">{{ menu.title }}</div>
                     </a>
@@ -42,8 +42,8 @@
 
 <script setup>
 import AppLogo from '@/image/logo-icon.png';
-import { ref } from 'vue'
-import { Link, router } from '@inertiajs/vue3'
+import { ref, computed } from 'vue'
+import { Link, usePage } from '@inertiajs/vue3'
 
 const activeIndex = ref(null)
 const toggle = (index) => {
@@ -51,104 +51,7 @@ const toggle = (index) => {
 }
 
 // Sidebar Menu Items
-const menus = [
-    {
-        title: 'ড্যাশবোর্ড',
-        icon: 'bx bx-home-circle',
-        route: 'dashboard',
-    },
-    {
-        title: 'কাস্টমার',
-        icon: 'bx bx-user-circle',
-        route: 'customers.index',
-    },
-    {
-        title: 'গাড়ির হিসাব',
-        icon: 'bx bx-car',
-        route: 'vehicles.dashboard',
-    },
-    {
-        title: 'Subscription',
-        icon: 'bx bx-category',
-        children: [
-            { label: 'Plan List', route: 'subscription-plans.index' },
-        ],
-    },
-    {
-        title: 'চালান',
-        icon: 'bx bx-receipt',
-        children: [
-            { label: 'আজকের চালান', route: 'invoices.index' },
-            { label: 'অগ্রিম চালান', route: 'invoice.advance' },
-            { label: 'সব চালান', route: 'invoice.all' },
-        ],
-    },
-    {
-        title: 'কাঁচা ইট প্রোডাকশন',
-        icon: 'bx bx-box',
-        children: [
-            { label: 'আজকের প্রোডাকশন', route: 'row-productions.index' },
-            { label: 'সব প্রোডাকশন', route: 'row-productions.all' },
-        ],
-    },
-    {
-        title: 'ডেলিভারি',
-        icon: 'bx bx-rocket',
-        children: [
-            { label: 'আজকের ডেলিভারি', route: 'deliveries.index' },
-            { label: 'আজ ডেলিভারি যাবে', route: 'invoice.advance' },
-            { label: 'সব ডেলিভারি লিস্ট', route: 'invoice.all' },
-        ],
-    },
-    {
-        title: 'পেমেন্ট খাতা',
-        icon: 'bx bx-bar-chart',
-        route: 'payment-khata.index',
-    },
-    {
-        title: 'লোড খাতা',
-        icon: 'bx bx-bar-chart',
-        route: 'loads.index',
-    },
-    {
-        title: 'আনলোড',
-        icon: 'bx bx-bar-chart',
-        route: 'unloads.index',
-    },
-    {
-        title: 'মালামাল স্টক',
-        icon: 'bx bx-bar-chart',
-        route: 'assets.index',
-    },
-    {
-        title: 'আবহাওয়া',
-        icon: 'bx bx-cloud-light-rain',
-        children: [
-            {
-                label: '১০ দিনের আবহাওয়া',
-                external: true,
-                url: 'https://weather.com/weather/tenday/l/3c8d640dae52e6fe935bb35b95ee5dfbb31b395253882e2578f216c762e22c62',
-            },
-            {
-                label: 'আজকের আবহাওয়া',
-                external: true,
-                url: 'https://weather.com/weather/hourbyhour/l/3c8d640dae52e6fe935bb35b95ee5dfbb31b395253882e2578f216c762e22c62',
-            },
-        ],
-    },
-    {
-        title: 'সেটিং',
-        icon: 'bx bx-cog',
-        children: [
-            { label: 'শ্রেণি এবং রেট', route: 'items.index' },
-            { label: 'খতিয়ান', route: 'payment_head.index' },
-            { label: 'স্টক লিস্ট', route: 'stock-lists.index' },
-            { label: 'মাঠ লিস্ট', route: 'field-lists.index' },
-            { label: 'খতিয়ান', route: 'payment_head.index' },
-            { label: 'ভাটার তথ্য', route: 'business-store.index' },
-        ],
-    },
-]
+const menus = computed(() => usePage().props.menus)
 </script>
 
 <style scoped>
