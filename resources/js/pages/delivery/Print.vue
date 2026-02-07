@@ -16,8 +16,9 @@
 
             <!-- Right Side -->
             <div class="company-info w-1/2 text-right">
-                <h4 class="text-primary mb-1">এম.এম.বি ব্রিকস</h4>
-                <p>হিলালিপাড়া, কাটাবাড়ি, গোবিন্দগঞ্জ</p>
+                <h4 class="text-primary mb-1">{{ $page.props.business_store?.short_name || $page.props.business_store?.store_name || 'এম.এম.বি ব্রিকস' }}</h4>
+                <p>{{ $page.props.business_store?.address || 'হিলালিপাড়া, কাটাবাড়ি, গোবিন্দগঞ্জ' }}</p>
+                <p>মোবাইল: {{ $page.props.business_store?.phone || '০১৭১৩৭০৫৮৫৯' }}</p>
             </div>
         </div>
 

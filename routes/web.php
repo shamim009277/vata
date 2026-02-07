@@ -68,6 +68,8 @@ Route::middleware(['auth'])->group(function () {
 
 
     Route::get('/delivery/invoice', [DeliveryController::class, 'invoice']);
+    Route::get('/delivery/all', [DeliveryController::class, 'alldelivery'])->name('delivery.all');
+    Route::get('/today/delivery', [DeliveryController::class, 'index'])->name('delivery.today');
     Route::resource('deliveries', DeliveryController::class);
 
     Route::resource('payment-khata', PaymentKhataController::class);

@@ -16,7 +16,7 @@
                         <div class="menu-title">{{ menu.title }}</div>
                     </a>
                     <ul class="mm-collapse" :class="{ 'mm-show': activeIndex === index }">
-                        <li v-for="(child, i) in menu.children" :key="i">
+                        <li v-for="(child, i) in menu.children" :key="i" :class="{ 'mm-active': isRouteActive(child) }">
                             <a v-if="child.url" :href="child.url" target="_blank"><i class="bx bx-right-arrow-alt"></i> {{ child.title }}</a>
                             <Link v-else :href="route(child.route)"><i class="bx bx-right-arrow-alt"></i> {{ child.title }}</Link>
                         </li>
@@ -42,16 +42,58 @@
 
 <script setup>
 import AppLogo from '@/image/logo-icon.png';
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { Link, usePage } from '@inertiajs/vue3'
+import { route } from 'ziggy-js';
 
+const page = usePage()
 const activeIndex = ref(null)
+
 const toggle = (index) => {
     activeIndex.value = activeIndex.value === index ? null : index
 }
 
 // Sidebar Menu Items
-const menus = computed(() => usePage().props.menus)
+const menus = computed(() => page.props.menus)
+
+const isActive = (menu) => {
+    if (menu.children) {
+        return menu.children.some(child => isRouteActive(child));
+    }
+    return isRouteActive(menu);
+}
+
+const isRouteActive = (item) => {
+    // Check by URL match if available
+    if (item.url) {
+        return page.url === item.url;
+    }
+    // Check by route match if available (assumes Ziggy's route() is global)
+    if (item.route && typeof route === 'function') {
+        try {
+            return route().current(item.route);
+        } catch (e) {
+            return false;
+        }
+    }
+    return false;
+}
+
+const checkActiveMenu = () => {
+    if (!menus.value) return;
+    const index = menus.value.findIndex(menu => isActive(menu));
+    if (index !== -1) {
+        activeIndex.value = index;
+    }
+}
+
+onMounted(() => {
+    checkActiveMenu();
+})
+
+watch(() => page.url, () => {
+    checkActiveMenu();
+})
 </script>
 
 <style scoped>

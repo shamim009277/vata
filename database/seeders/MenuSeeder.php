@@ -52,7 +52,7 @@ class MenuSeeder extends Seeder
         $delivery->children()->createMany([
             ['title' => 'আজকের ডেলিভারি', 'route' => 'deliveries.index', 'order' => 1],
             ['title' => 'আজ ডেলিভারি যাবে', 'route' => 'invoice.advance', 'order' => 2],
-            ['title' => 'সব ডেলিভারি লিস্ট', 'route' => 'invoice.all', 'order' => 3],
+            ['title' => 'সব ডেলিভারি লিস্ট', 'route' => 'delivery.all', 'order' => 3],
         ]);
 
         // 5. পেমেন্ট খাতা

@@ -390,6 +390,162 @@ const printChallan = (invoice) => {
     printWindow.document.close();
 };
 
+const printThermal = (invoice) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const formatDate = (dateString) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return dateString;
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}-${month}-${year}`;
+    };
+
+    const formatTime12Hour = (dateString) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return '';
+        let hours = date.getHours();
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12 || 12;
+        return `${hours}:${minutes} ${ampm}`;
+    };
+
+    const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Receipt - ${invoice.invoice_no}</title>
+            <style>
+                @page { size: 80mm auto; margin: 0; }
+                body { 
+                    font-family: 'Bangla', sans-serif; 
+                    margin: 0; 
+                    padding: 5px; 
+                    background: #fff; 
+                    width: 72mm;
+                    font-size: 12px;
+                    color: #000;
+                }
+                .text-center { text-align: center; }
+                .text-right { text-align: right; }
+                .text-left { text-align: left; }
+                .bold { font-weight: bold; }
+                
+                .header { margin-bottom: 10px; border-bottom: 1px dashed #000; padding-bottom: 5px; }
+                .company-name { font-size: 16px; margin: 0; font-weight: bold; }
+                .company-info { font-size: 10px; margin: 2px 0; }
+                
+                .invoice-details { margin-bottom: 10px; font-size: 10px; }
+                .customer-details { margin-bottom: 10px; border-bottom: 1px dashed #000; padding-bottom: 5px; }
+                
+                table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+                th { border-bottom: 1px solid #000; padding: 2px; text-align: left; font-size: 10px; }
+                td { padding: 2px; vertical-align: top; font-size: 11px; }
+                .amount-col { text-align: right; }
+                
+                .totals { margin-top: 5px; border-top: 1px dashed #000; padding-top: 5px; font-size: 11px; }
+                .totals-row { display: flex; justify-content: space-between; margin-bottom: 2px; }
+                
+                .footer { margin-top: 15px; text-align: center; font-size: 10px; border-top: 1px solid #000; padding-top: 5px; }
+                
+                @media print {
+                    body { margin: 0; padding: 5px; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header text-center">
+                <div class="company-name">${props.business_store?.store_name || 'এম.এম.বি ব্রিকস'}</div>
+                <p class="company-info">${props.business_store?.address || 'মাস্টারবাড়ি মির্জাপুর জয়দেবপুর'}</p>
+                <p class="company-info">মোবাইল: ${props.business_store?.phone || '01457636958,01746345643'}</p>
+            </div>
+            
+            <div class="invoice-details">
+                <div style="display: flex; justify-content: space-between;">
+                    <span>চালান: ${invoice.invoice_no}</span>
+                    <span>তারিখ: ${formatDate(invoice.invoice_date)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>সময়: ${formatTime12Hour(invoice.created_at)}</span>
+                    <span>তৈরি: ${invoice.creator?.name || 'Admin'}</span>
+                </div>
+            </div>
+            
+            <div class="customer-details">
+                <p style="margin: 2px 0;"><strong>কাস্টমার:</strong> ${invoice.customer?.name || 'Walk-in'}</p>
+                <p style="margin: 2px 0;"><strong>ফোন:</strong> ${invoice.customer?.phone || ''}</p>
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 40%">আইটেম</th>
+                        <th style="width: 15%">দর</th>
+                        <th style="width: 15%">পরিমাণ</th>
+                        <th style="width: 30%" class="amount-col">টাকা</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${invoice.invoice_details.map(item => `
+                        <tr>
+                            <td>${item.item?.name || 'Item'}</td>
+                            <td>${item.rate}</td>
+                            <td>${item.quantity}</td>
+                            <td class="amount-col">${Number(item.amount).toFixed(2)}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+            
+            <div class="totals">
+                <div class="totals-row">
+                    <span>মোট মূল্য:</span>
+                    <span class="bold">${parseFloat(invoice.invoice_details.reduce((total, item) => Number(total) + Number(item.amount), 0)).toFixed(2)}</span>
+                </div>
+                ${Number(invoice.rant) > 0 ? `
+                <div class="totals-row">
+                    <span>ভাড়া:</span>
+                    <span>${Number(invoice.rant).toFixed(2)}</span>
+                </div>` : ''}
+                ${Number(invoice.discount) > 0 ? `
+                <div class="totals-row">
+                    <span>ছাড়:</span>
+                    <span>-${Number(invoice.discount).toFixed(2)}</span>
+                </div>` : ''}
+                <div class="totals-row" style="border-top: 1px solid #000; padding-top: 2px; margin-top: 2px;">
+                    <span class="bold">সর্বমোট:</span>
+                    <span class="bold">${Number(invoice.total_amount).toFixed(2)}</span>
+                </div>
+                <div class="totals-row">
+                    <span>জমা:</span>
+                    <span>${Number(invoice.paid_amount).toFixed(2)}</span>
+                </div>
+                <div class="totals-row">
+                    <span>বাকি:</span>
+                    <span>${Number(invoice.due_amount).toFixed(2)}</span>
+                </div>
+            </div>
+            
+            <div class="footer">
+                <p>ধন্যবাদ, আবার আসবেন!</p>
+            </div>
+            
+            <script>
+                window.onload = function() { setTimeout(function() { window.print(); }, 500); }
+            <\/script>
+        </body>
+        </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+};
+
 const showInvoiceDetails = (invoice) => {
     selectedInvoice.value = invoice;
     showDetailsModal.value = true;
@@ -681,6 +837,12 @@ onMounted(() => {
                                                             <a class="dropdown-item" href="#" @click="printChallan(invoice)">
                                                                 <i class="bx bx-printer"></i> 
                                                                 প্রিন্ট চালান
+                                                            </a>
+                                                        </li>
+                                                        <li>
+                                                            <a class="dropdown-item" href="#" @click="printThermal(invoice)">
+                                                                <i class="bx bx-printer"></i> 
+                                                                থার্মাল প্রিন্ট
                                                             </a>
                                                         </li>
                                                         <li>

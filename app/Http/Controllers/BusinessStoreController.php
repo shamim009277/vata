@@ -34,6 +34,7 @@ class BusinessStoreController extends Controller
     {
         $request->validate([
             'store_name'     => 'required|string|max:50',
+            'short_name'     => 'nullable|string|max:50',
             'store_name_en'  => 'nullable|string|max:50',
             'address'        => 'required|string|max:100',
             'phone'          => 'required|string|max:50',
@@ -45,6 +46,7 @@ class BusinessStoreController extends Controller
             ['id' => $request->id],
             [
                 'store_name'    => $request->store_name,
+                'short_name'    => $request->short_name,
                 'store_name_en' => $request->store_name_en,
                 'address'       => $request->address,
                 'phone'         => $request->phone,

@@ -11,6 +11,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class DeliveryController extends Controller
@@ -30,11 +31,10 @@ class DeliveryController extends Controller
         $deliveryNumber = $currentYear . str_pad($lastIddel + 1, 4, '0', STR_PAD_LEFT);
 
         // Base query with relations
-        $query = Delivery::with([
+        $query = Invoice::with([
             'customer:id,name,phone,address',
-            'item:id,name',
+            'invoiceDetails.item:id,name',
             'creator:id,name',
-            'invoice:id,invoice_no,quantity',
         ])->orderBy('id', 'desc');
 
         // Search & Date filters
@@ -53,6 +53,58 @@ class DeliveryController extends Controller
         // 🔹 Search filter logic
         if ($search) {
             $query->where(function ($q) use ($search) {
+                $q->where('invoice_no', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($q2) use ($search) {
+                        $q2->where('name', 'like', "%{$search}%")
+                            ->orWhere('phone', 'like', "%{$search}%")
+                            ->orWhere('address', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        // Pagination
+        $perPage = $request->perPage ?? 10;
+
+        // Render with Inertia
+        return Inertia::render('delivery/TodayDelivery', [
+            'invoices' => $query->paginate($perPage)->withQueryString(),
+            'items' => $items,
+            'deliveryNumber' => $deliveryNumber,
+            'filters' => [
+                'search' => $search,
+                'date' => $date,
+                'perPage' => $perPage,
+            ],
+        ]);
+    }
+
+    public function alldelivery(Request $request)
+    {
+        // Active items list
+        $items = Item::active()->get();
+
+        // Auto-generate next delivery number
+        $currentYear = Carbon::now()->format('y');
+        $lastIddel = DB::table('deliveries')->max('id');
+        $deliveryNumber = $currentYear . str_pad($lastIddel + 1, 4, '0', STR_PAD_LEFT);
+
+        // Base query with relations
+        $query = Delivery::with([
+            'customer:id,name,phone,address,due_amount',
+            'item:id,name',
+            'creator:id,name',
+            'invoice:id,invoice_no,quantity',
+        ])->orderBy('id', 'desc');
+
+        // Filter by session (season)
+        if (Auth::user()->season) {
+             $query->where('season', Auth::user()->season);
+        }
+
+        // Search filter
+        $search = $request->input('search');
+        if ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('delivery_no', 'like', "%{$search}%")
                     ->orWhereHas('customer', function ($q2) use ($search) {
                         $q2->where('name', 'like', "%{$search}%")
@@ -68,17 +120,26 @@ class DeliveryController extends Controller
             });
         }
 
+        // Date range filter
+        $start_date = $request->input('start_date');
+        $end_date = $request->input('end_date');
+        
+        if ($start_date && $end_date) {
+             $query->whereBetween('delivery_date', [$start_date, $end_date]);
+        }
+
         // Pagination
         $perPage = $request->perPage ?? 10;
 
         // Render with Inertia
-        return Inertia::render('delivery/TodayDelivery', [
+        return Inertia::render('delivery/AllDelivery', [
             'deliveries' => $query->paginate($perPage)->withQueryString(),
             'items' => $items,
             'deliveryNumber' => $deliveryNumber,
             'filters' => [
                 'search' => $search,
-                'date' => $date,
+                'start_date' => $start_date,
+                'end_date' => $end_date,
                 'perPage' => $perPage,
             ],
         ]);
@@ -124,7 +185,7 @@ class DeliveryController extends Controller
 
             $delivery = new Delivery();
             $delivery->fill([
-                'season' => 2025,
+                'season' => Auth::user()->season ?? date('Y'),
                 'delivery_no' => $request->delivery_no,
                 'delivery_date' => $request->delivery_date,
                 'invoice_no' => $request->invoice_no,
@@ -176,7 +237,75 @@ class DeliveryController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        DB::beginTransaction();
+
+        try {
+            $delivery = Delivery::findOrFail($id);
+            $invoice = Invoice::where('invoice_no', $delivery->invoice_no)->first();
+            
+            if (!$invoice) {
+                throw new \Exception('চালান পাওয়া যায়নি!');
+            }
+
+            // Find Invoice Details
+            $details = InvoiceDetails::where('invoice_id', $invoice->id)
+                                    ->where('item_id', $delivery->item_id)
+                                    ->first();
+
+            if (!$details) {
+                throw new \Exception('চালানের বিস্তারিত তথ্য পাওয়া যায়নি!');
+            }
+
+            // Calculate quantity logic
+            // alreadyDeliveredByOthers = Current Total Delivered - This Delivery's Previous Amount
+            $alreadyDeliveredByOthers = max(0, $details->delivery_quantity - $delivery->delivery_qty);
+            $maxPossibleNewDelivery = $details->quantity - $alreadyDeliveredByOthers;
+
+            if ($request->today_delivery_qty > $maxPossibleNewDelivery) {
+                throw new \Exception("সর্বোচ্চ ডেলিভারি পরিমাণ {$maxPossibleNewDelivery} হতে পারে!");
+            }
+
+            // Update Invoice Details
+            $newTotalDelivered = $alreadyDeliveredByOthers + $request->today_delivery_qty;
+            
+            $details->update([
+                'delivery_quantity' => $newTotalDelivered,
+            ]);
+
+            // Update Delivery Record
+            $delivery->update([
+                'delivery_date' => $request->delivery_date,
+                'address' => $request->address,
+                'driver_name' => $request->driver_name,
+                'driver_phone' => $request->driver_phone,
+                'truck_number' => $request->truck_number,
+                'quantity' => $maxPossibleNewDelivery, // Update available snapshot
+                'delivery_qty' => $request->today_delivery_qty,
+                'amount' => $request->today_delivery_qty * $details->rate,
+                'delivery_rant' => $request->delivery_rant,
+                'note' => $request->note,
+            ]);
+
+            if ($request->customer_id) {
+                $delivery->update(['customer_id' => $request->customer_id]);
+            }
+            
+            if (isset($request->next_delivery_date) && !empty($request->next_delivery_date)) {
+                $invoice->update([
+                    'delivery_date' => $request->next_delivery_date,
+                ]);
+            }
+
+            DB::commit();
+            return redirect()->back()->with('success', 'ডেলিভারি আপডেট সফল হয়েছে!');
+
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            Log::error('Delivery Update Error: ' . $th->getMessage(), [
+                'trace' => $th->getTraceAsString(),
+            ]);
+            return redirect()->back()->with('error', $th->getMessage());
+        }
     }
 
     /**
@@ -238,7 +367,7 @@ class DeliveryController extends Controller
     {
         $search = $request->query('q', '');
         $invoice = Invoice::with([
-            'customer:id,name,phone,address',
+            'customer:id,name,phone,address,due_amount',
             'creator:id,name',
             'invoiceDetails:id,invoice_id,item_id,quantity,rate,amount,delivery_quantity',
             'invoiceDetails.item:id,name'
