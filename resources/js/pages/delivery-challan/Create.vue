@@ -50,8 +50,8 @@ const submit = () => {
     // Filter out items with 0 delivery quantity to avoid empty records? 
     // Or send all and handle in backend.
     // Let's validate at least one item has quantity > 0
-    const has quantity = form.items.some(item => item.current_delivery > 0);
-    if (!has quantity) {
+    const hasQuantity = form.items.some(item => item.current_delivery > 0);
+    if (!hasQuantity) {
         alert('অন্তত একটি আইটেমের ডেলিভারি পরিমাণ দিন');
         return;
     }

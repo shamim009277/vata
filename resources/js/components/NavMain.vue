@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
-import { type NavItem, type SharedData } from '@/types';
+import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton } from '@/components/ui/sidebar';
+import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
 
 defineProps<{
     items: NavItem[];
 }>();
 
-const page = usePage<SharedData>();
+const page = usePage();
 </script>
 
 <template>
@@ -15,15 +15,39 @@ const page = usePage<SharedData>();
         <SidebarGroupLabel>Platform</SidebarGroupLabel>
         <SidebarMenu>
             <SidebarMenuItem v-for="item in items" :key="item.title">
-                <SidebarMenuButton 
-                    as-child :is-active="item.href === page.url"
-                    :tooltip="item.title"
-                >
-                    <Link :href="item.href">
+                <!-- Parent menu item with children -->
+                <template v-if="item.items && item.items.length">
+                    <SidebarMenuButton :tooltip="item.title">
                         <component :is="item.icon" />
                         <span>{{ item.title }}</span>
-                    </Link>
-                </SidebarMenuButton>
+                    </SidebarMenuButton>
+                    <SidebarMenuSub>
+                        <SidebarMenuSubItem v-for="child in item.items" :key="child.title">
+                            <SidebarMenuSubButton 
+                                as-child 
+                                :is-active="child.href === page.props.url"
+                            >
+                                <Link :href="child.href">
+                                    <component :is="child.icon" />
+                                    <span>{{ child.title }}</span>
+                                </Link>
+                            </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                    </SidebarMenuSub>
+                </template>
+                
+                <!-- Simple menu item without children -->
+                <template v-else>
+                    <SidebarMenuButton 
+                        as-child :is-active="item.href === page.props.url"
+                        :tooltip="item.title"
+                    >
+                        <Link :href="item.href">
+                            <component :is="item.icon" />
+                            <span>{{ item.title }}</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </template>
             </SidebarMenuItem>
         </SidebarMenu>
     </SidebarGroup>

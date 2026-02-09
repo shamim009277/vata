@@ -4,17 +4,37 @@ import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import { BookOpen, Folder, LayoutGrid } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
+import { computed } from 'vue';
+import { route } from 'ziggy-js';
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: '/dashboard',
-        icon: LayoutGrid,
-    },
-];
+const page = usePage();
+
+// Convert dynamic menu data to NavItem format
+const mainNavItems = computed(() => {
+    const menus = page.props.menus as any[] || [];
+    
+    return menus.map(menu => {
+        const navItem: NavItem = {
+            title: menu.title,
+            href: menu.route ? route(menu.route) : (menu.url || '#'),
+            icon: LayoutGrid, // Always use LayoutGrid as fallback since we can't dynamically load icon classes
+        };
+
+        // Add children if they exist
+        if (menu.children && menu.children.length > 0) {
+            navItem.items = menu.children.map((child: any) => ({
+                title: child.title,
+                href: child.route ? route(child.route) : (child.url || '#'),
+                icon: LayoutGrid, // Always use LayoutGrid as fallback
+            }));
+        }
+
+        return navItem;
+    });
+});
 
 const footerNavItems: NavItem[] = [
     {

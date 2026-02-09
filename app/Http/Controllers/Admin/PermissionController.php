@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Spatie\Permission\Models\Permission;
+use App\Models\Permission;
+use App\Models\Menu;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Auth;
 
 class PermissionController extends Controller
 {
@@ -14,9 +16,18 @@ class PermissionController extends Controller
      */
     public function index()
     {
-        $permissions = Permission::all();
+        // Check permission manually or rely on route middleware
+        if (!Auth::user()->hasPermissionTo('permissions.index')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $permissions = Permission::with('menu')->get();
+        // Only get menus that have a route or url (likely leaf nodes/actual pages)
+        $menus = Menu::whereNotNull('route')->orWhereNotNull('url')->get();
+        
         return Inertia::render('Admin/Permission/Index', [
-            'permissions' => $permissions
+            'permissions' => $permissions,
+            'menus' => $menus
         ]);
     }
 
@@ -26,12 +37,27 @@ class PermissionController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|unique:permissions,name',
+            'name' => 'required',
+            'menu_id' => 'nullable|exists:menus,id',
         ]);
 
-        Permission::create(['name' => $request->name]);
+        // Check if name contains comma, split it
+        $names = explode(',', $request->name);
 
-        return redirect()->back()->with('success', 'Permission created successfully.');
+        foreach ($names as $name) {
+            $name = trim($name);
+            if (!empty($name)) {
+                // Check if permission already exists to avoid duplication error
+                if (!Permission::where('name', $name)->exists()) {
+                    Permission::create([
+                        'name' => $name,
+                        'menu_id' => $request->menu_id
+                    ]);
+                }
+            }
+        }
+
+        return redirect()->back()->with('success', 'Permissions created successfully.');
     }
 
     /**
@@ -41,9 +67,13 @@ class PermissionController extends Controller
     {
         $request->validate([
             'name' => 'required|unique:permissions,name,' . $permission->id,
+            'menu_id' => 'nullable|exists:menus,id',
         ]);
 
-        $permission->update(['name' => $request->name]);
+        $permission->update([
+            'name' => $request->name,
+            'menu_id' => $request->menu_id
+        ]);
 
         return redirect()->back()->with('success', 'Permission updated successfully.');
     }

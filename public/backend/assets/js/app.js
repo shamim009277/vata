@@ -25,7 +25,7 @@ $(function() {
 				return this.href == e
 			}).addClass("").parent().addClass("mm-active"); o.is("li");) o = o.parent("").addClass("mm-show").parent("").addClass("mm-active")
 	}), $(function() {
-		$("#menu").metisMenu()
+		// metisMenu initialization moved to Vue component
 	}), $(".chat-toggle-btn").on("click", function() {
 		$(".chat-wrapper").toggleClass("chat-toggled")
 	}), $(".chat-toggle-btn-mobile").on("click", function() {

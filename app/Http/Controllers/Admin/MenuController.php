@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Menu;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Auth;
 
 class MenuController extends Controller
 {
@@ -14,6 +15,11 @@ class MenuController extends Controller
      */
     public function index()
     {
+        // Check permission manually or rely on route middleware
+        if (!Auth::user()->hasPermissionTo('menus.index')) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $menus = Menu::with('children')->whereNull('parent_id')->orderBy('order')->get();
         $allMenus = Menu::orderBy('title')->get(); // For parent selection dropdown
         
@@ -39,9 +45,36 @@ class MenuController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        Menu::create($request->all());
+        // Create the menu
+        $menu = Menu::create($request->all());
 
-        return redirect()->back()->with('success', 'Menu created successfully.');
+        // Create permissions if permission_name is provided
+        if ($request->filled('permission_name')) {
+            $permissionNames = explode(',', $request->permission_name);
+            
+            foreach ($permissionNames as $permissionName) {
+                $permissionName = trim($permissionName);
+                if (!empty($permissionName)) {
+                    // Check if permission already exists for any menu
+                    $existingPermission = \Spatie\Permission\Models\Permission::where('name', $permissionName)->first();
+                    
+                    if ($existingPermission) {
+                        // If permission exists but not linked to this menu, update it
+                        if ($existingPermission->menu_id !== $menu->id) {
+                            $existingPermission->update(['menu_id' => $menu->id]);
+                        }
+                    } else {
+                        // Create new permission
+                        \Spatie\Permission\Models\Permission::create([
+                            'name' => $permissionName,
+                            'menu_id' => $menu->id,
+                        ]);
+                    }
+                }
+            }
+        }
+
+        return redirect()->back()->with('success', 'Menu created successfully with permissions.');
     }
 
     /**
@@ -62,7 +95,36 @@ class MenuController extends Controller
 
         $menu->update($request->all());
 
-        return redirect()->back()->with('success', 'Menu updated successfully.');
+        // Update permissions if permission_name is provided
+        if ($request->filled('permission_name')) {
+            // Delete existing permissions for this menu
+            \Spatie\Permission\Models\Permission::where('menu_id', $menu->id)->delete();
+            
+            $permissionNames = explode(',', $request->permission_name);
+            
+            foreach ($permissionNames as $permissionName) {
+                $permissionName = trim($permissionName);
+                if (!empty($permissionName)) {
+                    // Check if permission already exists for any menu
+                    $existingPermission = \Spatie\Permission\Models\Permission::where('name', $permissionName)->first();
+                    
+                    if ($existingPermission) {
+                        // If permission exists but not linked to this menu, update it
+                        if ($existingPermission->menu_id !== $menu->id) {
+                            $existingPermission->update(['menu_id' => $menu->id]);
+                        }
+                    } else {
+                        // Create new permission
+                        \Spatie\Permission\Models\Permission::create([
+                            'name' => $permissionName,
+                            'menu_id' => $menu->id,
+                        ]);
+                    }
+                }
+            }
+        }
+
+        return redirect()->back()->with('success', 'Menu updated successfully with permissions.');
     }
 
     /**

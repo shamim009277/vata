@@ -6,7 +6,8 @@
             <div class="toggle-icon ms-auto" @click="$emit('toggle-sidebar')"><i class='bx bx-arrow-to-left'></i></div>
         </div>
 
-        <ul class="metismenu" id="menu">
+        <!--navigation-->
+        <ul class="metismenu" id="sidebar-menu">
             <li v-for="(menu, index) in menus" :key="index" :class="{ 'mm-active': activeIndex === index }">
                 <!-- If has children (submenu) -->
                 <template v-if="menu.children && menu.children.length">
@@ -18,7 +19,7 @@
                     <ul class="mm-collapse" :class="{ 'mm-show': activeIndex === index }">
                         <li v-for="(child, i) in menu.children" :key="i" :class="{ 'mm-active': isRouteActive(child) }">
                             <a v-if="child.url" :href="child.url" target="_blank"><i class="bx bx-right-arrow-alt"></i> {{ child.title }}</a>
-                            <Link v-else :href="route(child.route)"><i class="bx bx-right-arrow-alt"></i> {{ child.title }}</Link>
+                            <Link v-else :href="child.route ? route(child.route) : '#'"><i class="bx bx-right-arrow-alt"></i> {{ child.title }}</Link>
                         </li>
                     </ul>
                 </template>
@@ -29,7 +30,7 @@
                         <div class="parent-icon"><i :class="menu.icon"></i></div>
                         <div class="menu-title">{{ menu.title }}</div>
                     </a>
-                    <Link v-else :href="route(menu.route)">
+                    <Link v-else :href="menu.route ? route(menu.route) : '#'">
                         <div class="parent-icon"><i :class="menu.icon"></i></div>
                         <div class="menu-title">{{ menu.title }}</div>
                     </Link>
@@ -88,6 +89,10 @@ const checkActiveMenu = () => {
 }
 
 onMounted(() => {
+    // Initialize metisMenu manually since it might not be initialized on subsequent Inertia visits
+    if (window.jQuery && window.jQuery().metisMenu) {
+        window.jQuery('#menu').metisMenu();
+    }
     checkActiveMenu();
 })
 

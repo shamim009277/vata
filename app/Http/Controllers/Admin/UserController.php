@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
@@ -16,6 +17,11 @@ class UserController extends Controller
      */
     public function index()
     {
+        // Check permission manually or rely on route middleware
+        if (!Auth::user()->hasPermissionTo('users.index')) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $users = User::with('roles')->get();
         $roles = Role::all();
         

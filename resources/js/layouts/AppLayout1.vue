@@ -165,6 +165,7 @@ import { onMounted, watch,ref } from 'vue'
 import { toast } from 'vue3-toastify'
 import Avatar from '@/image/avatar.png';
 import axios from 'axios';
+import { route } from 'ziggy-js';
 
 const page = usePage()
 const user = page.props.auth.user

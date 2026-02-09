@@ -5,8 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
+use App\Models\Permission;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Auth;
 
 class RoleController extends Controller
 {
@@ -15,8 +16,15 @@ class RoleController extends Controller
      */
     public function index()
     {
+        // Check permission manually or rely on route middleware
+        if (!Auth::user()->hasPermissionTo('roles.index')) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $roles = Role::with('permissions')->get();
-        $permissions = Permission::all();
+        
+        // Get all permissions with their menu relationships
+        $permissions = Permission::with('menu')->get();
         
         return Inertia::render('Admin/Role/Index', [
             'roles' => $roles,

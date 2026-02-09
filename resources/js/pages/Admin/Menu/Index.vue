@@ -1,7 +1,8 @@
 <script setup>
 import AppLayout1 from '@/layouts/AppLayout1.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
+import Swal from 'sweetalert2';
 
 const props = defineProps({
     menus: Array,
@@ -25,6 +26,7 @@ const form = useForm({
 const openCreateModal = () => {
     isEditing.value = false;
     form.reset();
+    form.permission_name = ''; // Clear permission name when creating new menu
     showModal.value = true;
 };
 
@@ -41,6 +43,34 @@ const openEditModal = (menu) => {
     form.is_active = Boolean(menu.is_active);
     showModal.value = true;
 };
+
+// Auto-prefix permission names with menu title
+const autoPrefixPermissions = () => {
+    if (!form.title) return;
+    
+    const menuPrefix = form.title.toLowerCase().replace(/\s+/g, '_');
+    const currentPermissions = form.permission_name ? form.permission_name.split(',').map(p => p.trim()) : [];
+    
+    // Remove existing prefixes from permissions
+    const cleanedPermissions = currentPermissions.map(perm => {
+        // Remove any existing menu prefix
+        return perm.replace(/^[a-z0-9_]+_/, '');
+    }).filter(p => p.length > 0);
+    
+    // Add menu prefix to all permissions
+    const prefixedPermissions = cleanedPermissions.map(perm => {
+        return `${menuPrefix}_${perm}`;
+    });
+    
+    form.permission_name = prefixedPermissions.join(', ');
+};
+
+// Watch for title changes to update permission names
+watch(() => form.title, () => {
+    if (form.permission_name && !isEditing.value) {
+        autoPrefixPermissions();
+    }
+});
 
 const closeModal = () => {
     showModal.value = false;
@@ -60,9 +90,50 @@ const submit = () => {
 };
 
 const deleteMenu = (id) => {
-    if (confirm('Are you sure you want to delete this menu?')) {
-        router.delete(route('admin.menus.destroy', id));
-    }
+    Swal.fire({
+        title: 'আপনি কি নিশ্চিত?',
+        text: "মুছে ফেললে এটি আর ফিরে পাওয়া যাবে না!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e3342f',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'হ্যাঁ, মুছে ফেলুন!',
+        cancelButtonText: 'বাতিল',
+        customClass: {
+            title: 'swal-title-small',
+            confirmButton: 'swal-btn-small swal-confirm-btn',
+            cancelButton: 'swal-btn-small swal-cancel-btn',
+        },
+    }).then((result) => {
+        if (!result.isConfirmed) {
+            return;
+        }
+
+        router.delete(route('admin.menus.destroy', id), {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: (page) => {
+                Swal.fire({
+                    title: 'মুছে ফেলা হয়েছে!',
+                    text: 'মেনু সফলভাবে মুছে ফেলা হয়েছে।',
+                    icon: 'success',
+                    showConfirmButton: false,
+                    timer: 1500,
+                    customClass: { title: 'swal-title-small' },
+                });
+            },
+            onError: (errors) => {
+                Swal.fire({
+                    title: 'ত্রুটি!',
+                    text: 'কিছু ভুল হয়েছে, দয়া করে আবার চেষ্টা করুন।',
+                    icon: 'error',
+                    showConfirmButton: false,
+                    timer: 1500,
+                    customClass: { title: 'swal-title-small' },
+                })
+            },
+        });
+    });
 };
 </script>
 
@@ -106,14 +177,36 @@ const deleteMenu = (id) => {
                                             </td>
                                             <td><i :class="menu.icon" v-if="menu.icon"></i> {{ menu.icon }}</td>
                                             <td>{{ menu.order }}</td>
-                                            <td>{{ menu.permission_name }}</td>
+                                            <td>
+                                                <div v-if="menu.permission_name" class="d-flex flex-wrap gap-1">
+                                                    <span v-for="perm in menu.permission_name.split(',')" :key="perm" class="badge bg-primary text-white">
+                                                        {{ perm.trim() }}
+                                                    </span>
+                                                </div>
+                                                <span v-else class="text-muted">No permissions</span>
+                                            </td>
                                             <td>
                                                 <span v-if="menu.is_active" class="badge bg-success">Active</span>
                                                 <span v-else class="badge bg-danger">Inactive</span>
                                             </td>
                                             <td>
-                                                <button @click="openEditModal(menu)" class="btn btn-sm btn-info me-2"><i class="bx bx-edit"></i></button>
-                                                <button @click="deleteMenu(menu.id)" class="btn btn-sm btn-danger"><i class="bx bx-trash"></i></button>
+                                                <div class="dropdown dropstart">
+                                                    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                        <i class="bx bx-dots-vertical-rounded"></i>
+                                                    </button>
+                                                    <ul class="dropdown-menu">
+                                                        <li>
+                                                            <a class="dropdown-item" href="javascript:;" @click="openEditModal(menu)">
+                                                                <i class="bx bx-edit"></i> এডিট করুন
+                                                            </a>
+                                                        </li>
+                                                        <li>
+                                                            <a class="dropdown-item" href="javascript:;" @click.prevent="deleteMenu(menu.id)">
+                                                                <i class="bx bx-trash"></i> মুছে ফেলুন
+                                                            </a>
+                                                        </li>
+                                                    </ul>
+                                                </div>
                                             </td>
                                         </tr>
                                         <!-- Children Menus -->
@@ -125,14 +218,36 @@ const deleteMenu = (id) => {
                                             </td>
                                             <td><i :class="child.icon" v-if="child.icon"></i> {{ child.icon }}</td>
                                             <td>{{ child.order }}</td>
-                                            <td>{{ child.permission_name }}</td>
+                                            <td>
+                                                <div v-if="child.permission_name" class="d-flex flex-wrap gap-1">
+                                                    <span v-for="perm in child.permission_name.split(',')" :key="perm" class="badge bg-primary text-white">
+                                                        {{ perm.trim() }}
+                                                    </span>
+                                                </div>
+                                                <span v-else class="text-muted">No permissions</span>
+                                            </td>
                                             <td>
                                                 <span v-if="child.is_active" class="badge bg-success">Active</span>
                                                 <span v-else class="badge bg-danger">Inactive</span>
                                             </td>
                                             <td>
-                                                <button @click="openEditModal(child)" class="btn btn-sm btn-info me-2"><i class="bx bx-edit"></i></button>
-                                                <button @click="deleteMenu(child.id)" class="btn btn-sm btn-danger"><i class="bx bx-trash"></i></button>
+                                                <div class="dropdown dropstart">
+                                                    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                        <i class="bx bx-dots-vertical-rounded"></i>
+                                                    </button>
+                                                    <ul class="dropdown-menu">
+                                                        <li>
+                                                            <a class="dropdown-item" href="javascript:;" @click="openEditModal(child)">
+                                                                <i class="bx bx-edit"></i> এডিট করুন
+                                                            </a>
+                                                        </li>
+                                                        <li>
+                                                            <a class="dropdown-item" href="javascript:;" @click.prevent="deleteMenu(child.id)">
+                                                                <i class="bx bx-trash"></i> মুছে ফেলুন
+                                                            </a>
+                                                        </li>
+                                                    </ul>
+                                                </div>
                                             </td>
                                         </tr>
                                     </template>
@@ -148,8 +263,11 @@ const deleteMenu = (id) => {
         <div v-if="showModal" class="modal fade show d-block" tabindex="-1" role="dialog" style="background: rgba(0,0,0,0.5);">
             <div class="modal-dialog modal-lg" role="document">
                 <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">{{ isEditing ? 'মেনু এডিট করুন' : 'নতুন মেনু তৈরি করুন' }}</h5>
+                    <div class="modal-header" style="border-top: 2px solid #004882;">
+                        <h5 class="modal-title font-bold">
+                            <i class="bx" :class="isEditing ? 'bx-edit' : 'bx-plus-circle'"></i>
+                            {{ isEditing ? 'মেনু এডিট করুন' : 'নতুন মেনু তৈরি করুন' }}
+                        </h5>
                         <button type="button" class="btn-close" @click="closeModal"></button>
                     </div>
                     <div class="modal-body">
@@ -183,8 +301,14 @@ const deleteMenu = (id) => {
                                     <input v-model="form.order" type="number" class="form-control">
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label">পারমিশন নাম</label>
-                                    <input v-model="form.permission_name" type="text" class="form-control">
+                                    <label class="form-label">পারমিশন নাম <span class="text-muted text-sm">(কমা দিয়ে একাধিক লিখুন)</span></label>
+                                    <input v-model="form.permission_name" type="text" class="form-control" placeholder="যেমন: create, edit, delete">
+                                    <small class="form-text text-muted">
+                                        একাধিক পারমিশন যুক্ত করতে কমা (,) ব্যবহার করুন।
+                                        <span v-if="form.title" class="d-block mt-1">
+                                            <strong>টিপ:</strong> {{ form.title.toLowerCase().replace(/\s+/g, '_') }}_view, {{ form.title.toLowerCase().replace(/\s+/g, '_') }}_edit
+                                        </span>
+                                    </small>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-check mt-4">
@@ -194,8 +318,13 @@ const deleteMenu = (id) => {
                                 </div>
                             </div>
                             <div class="mt-4 text-end">
-                                <button type="button" class="btn btn-secondary me-2" @click="closeModal">বন্ধ করুন</button>
-                                <button type="submit" class="btn btn-primary">{{ isEditing ? 'আপডেট করুন' : 'সেভ করুন' }}</button>
+                                <button type="button" class="btn btn-secondary btn-sm me-2 px-4" @click="closeModal">
+                                    <i class="bx bx-x"></i> বন্ধ করুন
+                                </button>
+                                <button type="submit" class="btn btn-primary btn-sm px-4">
+                                    <i class="bx" :class="isEditing ? 'bx-up-arrow-alt' : 'bx-check'"></i>
+                                    {{ isEditing ? 'আপডেট করুন' : 'সেভ করুন' }}
+                                </button>
                             </div>
                         </form>
                     </div>

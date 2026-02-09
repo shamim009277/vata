@@ -36,8 +36,6 @@ Route::post('dashboard/session_change', [DashboardController::class, 'sessionCha
 
 
 Route::middleware(['auth'])->group(function () {
-    Route::put('/plans/{plan}/status', [SubscriptionPlanController::class, 'updateStatus']);
-    Route::resource('subscription-plans', SubscriptionPlanController::class);
     Route::resource('business-store', BusinessStoreController::class);
 
     Route::put('/items/{item}/status', [ItemController::class, 'updateStatus']);
@@ -95,11 +93,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('delivery-challans/invoice-items/{invoice}', [DeliveryChallanController::class, 'getInvoiceItems'])->name('delivery-challans.invoice-items');
 
     // Administration Routes
-    Route::group(['prefix' => 'admin', 'as' => 'admin.'], function () {
-        Route::resource('menus', App\Http\Controllers\Admin\MenuController::class);
-        Route::resource('roles', App\Http\Controllers\Admin\RoleController::class);
-        Route::resource('permissions', App\Http\Controllers\Admin\PermissionController::class);
-        Route::resource('users', App\Http\Controllers\Admin\UserController::class);
+    Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], function () {
+        Route::resource('menus', App\Http\Controllers\Admin\MenuController::class)->middleware('permission:menus.index');
+        Route::resource('roles', App\Http\Controllers\Admin\RoleController::class)->middleware('permission:roles.index');
+        Route::resource('permissions', App\Http\Controllers\Admin\PermissionController::class)->middleware('permission:permissions.index');
+        Route::resource('users', App\Http\Controllers\Admin\UserController::class)->middleware('permission:users.index');
     });
 
     Route::resource('delivery-challans', DeliveryChallanController::class)->except(['create', 'store']);

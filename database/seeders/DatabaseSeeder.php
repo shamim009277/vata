@@ -23,5 +23,9 @@ class DatabaseSeeder extends Seeder
         // ]);
         //SubscriptionPlan::factory(20)->create();
         Module::factory(10)->create();
+
+        // Run admin permissions and role seeders
+        $this->call(AdminPermissionsSeeder::class);
+        $this->call(AdminRoleSeeder::class);
     }
 }

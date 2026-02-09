@@ -2,27 +2,33 @@
 import AppLayout1 from '@/layouts/AppLayout1.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import Swal from 'sweetalert2';
+import { route } from 'ziggy-js';
 
 const props = defineProps({
     permissions: Array,
+    menus: Array,
 });
 
 const showModal = ref(false);
 const isEditing = ref(false);
 const form = useForm({
     id: null,
+    menu_id: '',
     name: '',
 });
 
 const openCreateModal = () => {
     isEditing.value = false;
     form.reset();
+    form.menu_id = '';
     showModal.value = true;
 };
 
 const openEditModal = (permission) => {
     isEditing.value = true;
     form.id = permission.id;
+    form.menu_id = permission.menu_id || '';
     form.name = permission.name;
     showModal.value = true;
 };
@@ -35,19 +41,58 @@ const closeModal = () => {
 const submit = () => {
     if (isEditing.value) {
         form.put(route('admin.permissions.update', form.id), {
-            onSuccess: () => closeModal(),
+            onSuccess: () => {
+                closeModal();
+                Swal.fire({
+                    title: 'সফল!',
+                    text: 'পারমিশন আপডেট হয়েছে।',
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            },
         });
     } else {
         form.post(route('admin.permissions.store'), {
-            onSuccess: () => closeModal(),
+            onSuccess: () => {
+                closeModal();
+                Swal.fire({
+                    title: 'সফল!',
+                    text: 'পারমিশন তৈরি হয়েছে।',
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            },
         });
     }
 };
 
 const deletePermission = (id) => {
-    if (confirm('Are you sure you want to delete this permission?')) {
-        router.delete(route('admin.permissions.destroy', id));
-    }
+    Swal.fire({
+        title: 'আপনি কি নিশ্চিত?',
+        text: "মুছে ফেললে এটি আর ফিরে পাওয়া যাবে না!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e3342f',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'হ্যাঁ, মুছে ফেলুন!',
+        cancelButtonText: 'বাতিল'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            router.delete(route('admin.permissions.destroy', id), {
+                onSuccess: () => {
+                    Swal.fire({
+                        title: 'মুছে ফেলা হয়েছে!',
+                        text: 'পারমিশন সফলভাবে মুছে ফেলা হয়েছে।',
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                }
+            });
+        }
+    });
 };
 </script>
 
@@ -61,7 +106,7 @@ const deletePermission = (id) => {
                     <div class="card-header">
                         <div class="card-title d-flex justify-content-between align-items-center flex-wrap gap-2 mb-0">
                             <h6 class="mb-0 text-primary d-flex align-items-center">
-                                <i class="fadeIn animated bx bx-key"></i> পারমিশন ম্যানেজমেন্ট
+                                <i class="fadeIn animated bx bx-key me-1"></i> পারমিশন ম্যানেজমেন্ট
                             </h6>
                             <button @click="openCreateModal" class="btn btn-primary btn-sm"><i class="bx bx-plus"></i> নতুন পারমিশন</button>
                         </div>
@@ -71,17 +116,29 @@ const deletePermission = (id) => {
                             <table class="table table-striped table-bordered align-middle">
                                 <thead class="bg-primary text-white">
                                     <tr>
+                                        <th>মেনু</th>
                                         <th>পারমিশন নাম</th>
                                         <th>অ্যাকশন</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr v-for="permission in permissions" :key="permission.id">
+                                        <td>{{ permission.menu ? permission.menu.title : 'N/A' }}</td>
                                         <td>{{ permission.name }}</td>
                                         <td>
-                                            <button @click="openEditModal(permission)" class="btn btn-sm btn-info me-2"><i class="bx bx-edit"></i></button>
-                                            <button @click="deletePermission(permission.id)" class="btn btn-sm btn-danger"><i class="bx bx-trash"></i></button>
+                                            <div class="dropdown">
+                                                <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                    <i class="bx bx-dots-vertical-rounded"></i>
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li><a class="dropdown-item" href="#" @click.prevent="openEditModal(permission)"><i class="bx bx-edit me-2"></i>এডিট</a></li>
+                                                    <li><a class="dropdown-item text-danger" href="#" @click.prevent="deletePermission(permission.id)"><i class="bx bx-trash me-2"></i>মুছুন</a></li>
+                                                </ul>
+                                            </div>
                                         </td>
+                                    </tr>
+                                    <tr v-if="permissions.length === 0">
+                                        <td colspan="3" class="text-center">কোনো তথ্য পাওয়া যায়নি</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -95,19 +152,32 @@ const deletePermission = (id) => {
         <div v-if="showModal" class="modal fade show d-block" tabindex="-1" role="dialog" style="background: rgba(0,0,0,0.5);">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">{{ isEditing ? 'পারমিশন এডিট করুন' : 'নতুন পারমিশন তৈরি করুন' }}</h5>
+                    <div class="modal-header" style="border-top: 2px solid #004882;">
+                        <h5 class="modal-title font-bold">
+                            <i class="bx" :class="isEditing ? 'bx-edit' : 'bx-plus-circle'"></i>
+                            {{ isEditing ? 'পারমিশন এডিট করুন' : 'নতুন পারমিশন তৈরি করুন' }}
+                        </h5>
                         <button type="button" class="btn-close" @click="closeModal"></button>
                     </div>
                     <div class="modal-body">
                         <form @submit.prevent="submit">
                             <div class="mb-3">
-                                <label class="form-label">পারমিশন নাম</label>
-                                <input v-model="form.name" type="text" class="form-control" required>
+                                <label class="form-label">মেনু নির্বাচন করুন</label>
+                                <select v-model="form.menu_id" class="form-select">
+                                    <option value="" disabled>মেনু নির্বাচন করুন</option>
+                                    <option v-for="menu in menus" :key="menu.id" :value="menu.id">
+                                        {{ menu.title }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">পারমিশন নাম <span v-if="!isEditing" class="text-muted text-sm">(কমা দিয়ে একাধিক লিখুন)</span></label>
+                                <input v-model="form.name" type="text" class="form-control" placeholder="যেমন: create, edit, delete" required>
+                                <small v-if="!isEditing" class="form-text text-muted">একাধিক পারমিশন যুক্ত করতে কমা (,) ব্যবহার করুন।</small>
                             </div>
                             <div class="mt-4 text-end">
-                                <button type="button" class="btn btn-secondary me-2" @click="closeModal">বন্ধ করুন</button>
-                                <button type="submit" class="btn btn-primary">{{ isEditing ? 'আপডেট করুন' : 'সেভ করুন' }}</button>
+                                <button type="button" class="btn btn-secondary btn-sm me-2" @click="closeModal">বন্ধ করুন</button>
+                                <button type="submit" class="btn btn-primary btn-sm">{{ isEditing ? 'আপডেট করুন' : 'সেভ করুন' }}</button>
                             </div>
                         </form>
                     </div>
