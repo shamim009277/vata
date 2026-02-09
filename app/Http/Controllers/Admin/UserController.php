@@ -18,9 +18,9 @@ class UserController extends Controller
     public function index()
     {
         // Check permission manually or rely on route middleware
-        if (!Auth::user()->hasPermissionTo('users.index')) {
-            abort(403, 'Unauthorized action.');
-        }
+        // if (!Auth::user()->hasPermissionTo('users.index')) {
+        //     abort(403, 'Unauthorized action.');
+        // }
 
         $users = User::with('roles')->get();
         $roles = Role::all();

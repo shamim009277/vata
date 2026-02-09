@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Inertia\Inertia;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Gate;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,6 +21,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Gate::before(function ($user, $ability) {
+            return $user->hasRole('Super Admin') ? true : null;
+        });
+
         Inertia::share([
             'flash' => fn() => [
                 'success' => session('success'),

@@ -17,9 +17,9 @@ class PermissionController extends Controller
     public function index()
     {
         // Check permission manually or rely on route middleware
-        if (!Auth::user()->hasPermissionTo('permissions.index')) {
-            abort(403, 'Unauthorized action.');
-        }
+        // if (!Auth::user()->hasPermissionTo('permissions.index')) {
+        //     abort(403, 'Unauthorized action.');
+        // }
 
         $permissions = Permission::with('menu')->get();
         // Only get menus that have a route or url (likely leaf nodes/actual pages)

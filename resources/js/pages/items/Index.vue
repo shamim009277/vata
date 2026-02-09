@@ -5,7 +5,9 @@ import { ref, watch } from 'vue';
 import InputError from '@/components/InputError.vue';
 import { Input } from '@/components/ui/input';
 import Swal from 'sweetalert2';
+import { usePermission } from '@/Composables/usePermission';
 
+const { hasPermission } = usePermission();
 
 const props = defineProps({
     items: Object,
@@ -148,7 +150,7 @@ watch([search, perPage], () => {
                             <h6 class="mb-0 text-primary d-flex align-items-center">
                                 <a href="javascript:;" class="me-2"><i class="fadeIn animated bx bx-list-ul"></i>শ্রেণি এবং রেট</a>
                             </h6>
-                            <button class="btn btn-primary btn-sm" @click="createItem"><i class="fadeIn animated bx bx-plus-medical" style="font-size: small;"></i>নতুন শ্রেণি</button>
+                            <button v-if="hasPermission('items.create')" class="btn btn-primary btn-sm" @click="createItem"><i class="fadeIn animated bx bx-plus-medical" style="font-size: small;"></i>নতুন শ্রেণি</button>
                         </div>
                     </div>
                     <div class="card-body">
@@ -201,8 +203,8 @@ watch([search, perPage], () => {
                                                         </div>
                                                     </td>
                                                     <td>
-                                                        <a @click="openEdit(item)" class="text-primary" style="cursor: pointer;"><i class="fadeIn animated bx bx-edit hover:opacity-90" style="font-size: larger;"></i></a>
-                                                        <a @click.prevent="confirmDelete(item.id)" class="text-danger" style="cursor: pointer;"><i class="fadeIn animated bx bx-trash hover:opacity-90" style="font-size: larger;"></i></a>
+                                                        <a v-if="hasPermission('items.edit')" @click="openEdit(item)" class="text-primary" style="cursor: pointer;"><i class="fadeIn animated bx bx-edit hover:opacity-90" style="font-size: larger;"></i></a>
+                                                        <a v-if="hasPermission('items.destroy')" @click.prevent="confirmDelete(item.id)" class="text-danger" style="cursor: pointer;"><i class="fadeIn animated bx bx-trash hover:opacity-90" style="font-size: larger;"></i></a>
                                                     </td>
                                                 </tr>
                                             </tbody>

@@ -3,6 +3,9 @@ import AppLayout1 from '@/layouts/AppLayout1.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
 import Swal from 'sweetalert2';
+import { usePermission } from '@/Composables/usePermission';
+
+const { hasPermission } = usePermission();
 
 const props = defineProps({
     menus: Array,
@@ -149,7 +152,7 @@ const deleteMenu = (id) => {
                             <h6 class="mb-0 text-primary d-flex align-items-center">
                                 <i class="fadeIn animated bx bx-menu"></i> মেনু ম্যানেজমেন্ট
                             </h6>
-                            <button @click="openCreateModal" class="btn btn-primary btn-sm"><i class="bx bx-plus"></i> নতুন মেনু</button>
+                            <button v-if="hasPermission('admin.menus.create')" @click="openCreateModal" class="btn btn-primary btn-sm"><i class="fadeIn animated bx bx-plus-medical" style="font-size: small;"></i> নতুন মেনু</button>
                         </div>
                     </div>
                     <div class="card-body">
@@ -190,23 +193,8 @@ const deleteMenu = (id) => {
                                                 <span v-else class="badge bg-danger">Inactive</span>
                                             </td>
                                             <td>
-                                                <div class="dropdown dropstart">
-                                                    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                                        <i class="bx bx-dots-vertical-rounded"></i>
-                                                    </button>
-                                                    <ul class="dropdown-menu">
-                                                        <li>
-                                                            <a class="dropdown-item" href="javascript:;" @click="openEditModal(menu)">
-                                                                <i class="bx bx-edit"></i> এডিট করুন
-                                                            </a>
-                                                        </li>
-                                                        <li>
-                                                            <a class="dropdown-item" href="javascript:;" @click.prevent="deleteMenu(menu.id)">
-                                                                <i class="bx bx-trash"></i> মুছে ফেলুন
-                                                            </a>
-                                                        </li>
-                                                    </ul>
-                                                </div>
+                                                <a v-if="hasPermission('admin.menus.edit')" @click="openEditModal(menu)" class="text-primary" style="cursor: pointer;"><i class="fadeIn animated bx bx-edit hover:opacity-90" style="font-size: larger;"></i></a>
+                                                <a v-if="hasPermission('admin.menus.destroy')" @click.prevent="deleteMenu(menu.id)" class="text-danger ms-2" style="cursor: pointer;"><i class="fadeIn animated bx bx-trash hover:opacity-90" style="font-size: larger;"></i></a>
                                             </td>
                                         </tr>
                                         <!-- Children Menus -->
@@ -231,23 +219,8 @@ const deleteMenu = (id) => {
                                                 <span v-else class="badge bg-danger">Inactive</span>
                                             </td>
                                             <td>
-                                                <div class="dropdown dropstart">
-                                                    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                                        <i class="bx bx-dots-vertical-rounded"></i>
-                                                    </button>
-                                                    <ul class="dropdown-menu">
-                                                        <li>
-                                                            <a class="dropdown-item" href="javascript:;" @click="openEditModal(child)">
-                                                                <i class="bx bx-edit"></i> এডিট করুন
-                                                            </a>
-                                                        </li>
-                                                        <li>
-                                                            <a class="dropdown-item" href="javascript:;" @click.prevent="deleteMenu(child.id)">
-                                                                <i class="bx bx-trash"></i> মুছে ফেলুন
-                                                            </a>
-                                                        </li>
-                                                    </ul>
-                                                </div>
+                                                <a v-if="hasPermission('admin.menus.edit')" @click="openEditModal(child)" class="text-primary" style="cursor: pointer;"><i class="fadeIn animated bx bx-edit hover:opacity-90" style="font-size: larger;"></i></a>
+                                                <a v-if="hasPermission('admin.menus.destroy')" @click.prevent="deleteMenu(child.id)" class="text-danger ms-2" style="cursor: pointer;"><i class="fadeIn animated bx bx-trash hover:opacity-90" style="font-size: larger;"></i></a>
                                             </td>
                                         </tr>
                                     </template>

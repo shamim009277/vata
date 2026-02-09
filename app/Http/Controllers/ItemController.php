@@ -6,9 +6,21 @@ use App\Http\Requests\ItemRequest;
 use App\Models\Item;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class ItemController extends Controller
+class ItemController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:items.index', only: ['index']),
+            new Middleware('permission:items.create', only: ['create', 'store']),
+            new Middleware('permission:items.edit', only: ['edit', 'update', 'updateStatus']),
+            new Middleware('permission:items.destroy', only: ['destroy']),
+        ];
+    }
+
     /**
      * Display a listing of the resource.
      */

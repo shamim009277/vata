@@ -2,6 +2,9 @@
 import AppLayout1 from '@/layouts/AppLayout1.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { ref, computed, watch, nextTick } from 'vue';
+import { usePermission } from '@/Composables/usePermission';
+
+const { hasPermission } = usePermission();
 
 const props = defineProps({
     roles: Array,
@@ -304,7 +307,7 @@ const getGroupedPermissions = (permissions) => {
                             <h6 class="mb-0 text-primary d-flex align-items-center">
                                 <i class="fadeIn animated bx bx-shield"></i> রোল ম্যানেজমেন্ট
                             </h6>
-                            <button @click="openCreateModal" class="btn btn-primary btn-sm"><i class="bx bx-plus"></i> নতুন রোল</button>
+                            <button v-if="hasPermission('admin.roles.create')" @click="openCreateModal" class="btn btn-primary btn-sm"><i class="fadeIn animated bx bx-plus-medical" style="font-size: small;"></i> নতুন রোল</button>
                         </div>
                     </div>
                     <div class="card-body">
@@ -354,8 +357,8 @@ const getGroupedPermissions = (permissions) => {
                                             </div>
                                         </td>
                                         <td>
-                                            <button @click="openEditModal(role)" class="btn btn-sm btn-info me-2"><i class="bx bx-edit"></i></button>
-                                            <button @click="deleteRole(role.id)" class="btn btn-sm btn-danger"><i class="bx bx-trash"></i></button>
+                                            <a v-if="hasPermission('admin.roles.edit')" @click="openEditModal(role)" class="text-primary" style="cursor: pointer;"><i class="fadeIn animated bx bx-edit hover:opacity-90" style="font-size: larger;"></i></a>
+                                            <a v-if="hasPermission('admin.roles.destroy')" @click="deleteRole(role.id)" class="text-danger ms-2" style="cursor: pointer;"><i class="fadeIn animated bx bx-trash hover:opacity-90" style="font-size: larger;"></i></a>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -537,8 +540,8 @@ const getGroupedPermissions = (permissions) => {
                                 </div>
                             </div>
                             <div class="mt-4 text-end">
-                                <button type="button" class="btn btn-secondary me-2" @click="closeModal">বন্ধ করুন</button>
-                                <button type="submit" class="btn btn-primary">{{ isEditing ? 'আপডেট করুন' : 'সেভ করুন' }}</button>
+                                <button type="button" class="btn btn-secondary me-2" @click="closeModal"><i class="bx bx-x"></i> বন্ধ করুন</button>
+                                <button type="submit" class="btn btn-primary"><i class="bx bx-save"></i> {{ isEditing ? 'আপডেট করুন' : 'সেভ করুন' }}</button>
                             </div>
                         </form>
                     </div>

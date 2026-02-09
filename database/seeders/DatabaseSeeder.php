@@ -27,5 +27,7 @@ class DatabaseSeeder extends Seeder
         // Run admin permissions and role seeders
         $this->call(AdminPermissionsSeeder::class);
         $this->call(AdminRoleSeeder::class);
+        $this->call(MenuSeeder::class);
+        $this->call(PermissionSyncSeeder::class);
     }
 }

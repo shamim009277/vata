@@ -4,6 +4,9 @@ import { Head, useForm, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import Swal from 'sweetalert2';
 import { route } from 'ziggy-js';
+import { usePermission } from '@/Composables/usePermission';
+
+const { hasPermission } = usePermission();
 
 const props = defineProps({
     permissions: Array,
@@ -108,7 +111,7 @@ const deletePermission = (id) => {
                             <h6 class="mb-0 text-primary d-flex align-items-center">
                                 <i class="fadeIn animated bx bx-key me-1"></i> পারমিশন ম্যানেজমেন্ট
                             </h6>
-                            <button @click="openCreateModal" class="btn btn-primary btn-sm"><i class="bx bx-plus"></i> নতুন পারমিশন</button>
+                            <button v-if="hasPermission('admin.permissions.create')" @click="openCreateModal" class="btn btn-primary btn-sm"><i class="fadeIn animated bx bx-plus-medical" style="font-size: small;"></i> নতুন পারমিশন</button>
                         </div>
                     </div>
                     <div class="card-body">
@@ -126,15 +129,8 @@ const deletePermission = (id) => {
                                         <td>{{ permission.menu ? permission.menu.title : 'N/A' }}</td>
                                         <td>{{ permission.name }}</td>
                                         <td>
-                                            <div class="dropdown">
-                                                <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                                    <i class="bx bx-dots-vertical-rounded"></i>
-                                                </button>
-                                                <ul class="dropdown-menu">
-                                                    <li><a class="dropdown-item" href="#" @click.prevent="openEditModal(permission)"><i class="bx bx-edit me-2"></i>এডিট</a></li>
-                                                    <li><a class="dropdown-item text-danger" href="#" @click.prevent="deletePermission(permission.id)"><i class="bx bx-trash me-2"></i>মুছুন</a></li>
-                                                </ul>
-                                            </div>
+                                            <a v-if="hasPermission('admin.permissions.edit')" @click.prevent="openEditModal(permission)" class="text-primary" style="cursor: pointer;"><i class="fadeIn animated bx bx-edit hover:opacity-90" style="font-size: larger;"></i></a>
+                                            <a v-if="hasPermission('admin.permissions.destroy')" @click.prevent="deletePermission(permission.id)" class="text-danger ms-2" style="cursor: pointer;"><i class="fadeIn animated bx bx-trash hover:opacity-90" style="font-size: larger;"></i></a>
                                         </td>
                                     </tr>
                                     <tr v-if="permissions.length === 0">
@@ -176,8 +172,8 @@ const deletePermission = (id) => {
                                 <small v-if="!isEditing" class="form-text text-muted">একাধিক পারমিশন যুক্ত করতে কমা (,) ব্যবহার করুন।</small>
                             </div>
                             <div class="mt-4 text-end">
-                                <button type="button" class="btn btn-secondary btn-sm me-2" @click="closeModal">বন্ধ করুন</button>
-                                <button type="submit" class="btn btn-primary btn-sm">{{ isEditing ? 'আপডেট করুন' : 'সেভ করুন' }}</button>
+                                <button type="button" class="btn btn-secondary btn-sm me-2" @click="closeModal"><i class="bx bx-x"></i> বন্ধ করুন</button>
+                                <button type="submit" class="btn btn-primary btn-sm"><i class="bx bx-save"></i> {{ isEditing ? 'আপডেট করুন' : 'সেভ করুন' }}</button>
                             </div>
                         </form>
                     </div>

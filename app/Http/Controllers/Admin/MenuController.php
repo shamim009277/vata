@@ -16,9 +16,9 @@ class MenuController extends Controller
     public function index()
     {
         // Check permission manually or rely on route middleware
-        if (!Auth::user()->hasPermissionTo('menus.index')) {
-            abort(403, 'Unauthorized action.');
-        }
+        // if (!Auth::user()->hasPermissionTo('menus.index')) {
+        //     abort(403, 'Unauthorized action.');
+        // }
 
         $menus = Menu::with('children')->whereNull('parent_id')->orderBy('order')->get();
         $allMenus = Menu::orderBy('title')->get(); // For parent selection dropdown

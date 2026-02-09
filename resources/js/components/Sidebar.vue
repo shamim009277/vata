@@ -7,7 +7,7 @@
         </div>
 
         <!--navigation-->
-        <ul class="metismenu" id="sidebar-menu">
+        <ul class="metismenu" id="menu">
             <li v-for="(menu, index) in menus" :key="index" :class="{ 'mm-active': activeIndex === index }">
                 <!-- If has children (submenu) -->
                 <template v-if="menu.children && menu.children.length">
