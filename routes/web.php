@@ -86,11 +86,20 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('asset/lost/{lost}',[AssetsController::class,'lostDestroy'])->name('assets.lost.destroy');
     Route::post('asset/issue/{issue}/damage',[AssetsController::class,'issueDamage'])->name('assets.issue.damage');
     Route::get('assets/products/search', [AssetsController::class, 'productsSearch'])->name('assets.products.search');
+
+    Route::get('customers/search', [App\Http\Controllers\CustomerController::class, 'search'])->name('customers.search');
     Route::resource('customers', \App\Http\Controllers\CustomerController::class)->middleware('permission:customers.index');
+
 
     Route::get('delivery-challans/create', [DeliveryChallanController::class, 'create'])->name('delivery-challans.create');
     Route::post('delivery-challans', [DeliveryChallanController::class, 'store'])->name('delivery-challans.store');
     Route::get('delivery-challans/invoice-items/{invoice}', [DeliveryChallanController::class, 'getInvoiceItems'])->name('delivery-challans.invoice-items');
+
+    // Report Routes
+    Route::get('/reports/delivery', [App\Http\Controllers\ReportController::class, 'deliveryReport'])->name('reports.delivery');
+    Route::get('/reports/delivery/pdf', [App\Http\Controllers\ReportController::class, 'deliveryReportPdf'])->name('reports.delivery.pdf');
+    Route::get('/reports/challan', [App\Http\Controllers\ReportController::class, 'challanReport'])->name('reports.challan');
+    Route::get('/reports/challan/pdf', [App\Http\Controllers\ReportController::class, 'challanReportPdf'])->name('reports.challan.pdf');
 
     // Administration Routes
     Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], function () {

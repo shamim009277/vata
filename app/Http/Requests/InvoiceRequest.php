@@ -55,6 +55,7 @@ class InvoiceRequest extends FormRequest
             'customer_name.string' => 'গ্রাহকের নাম স্ট্রিং হতে হবে।',
             'customer_name.max' => 'গ্রাহকের নাম মোট 50 অক্ষরের মধ্যে হতে হবে।',
             'phone.required' => 'গ্রাহকের ফোন নম্বর দিতে হবে।',
+            'phone.regex' => 'সঠিক বাংলাদেশি ফোন নম্বর দিন (যেমন: 017XXXXXXXX)।',
 
             'sub_total.required' => 'সাব টোটাল দিতে হবে।',
             'total_amount.required' => 'মোট টাকা দিতে হবে।',

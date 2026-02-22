@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import InputError from '@/components/InputError.vue';
 import { toast } from 'vue3-toastify';
 import Swal from 'sweetalert2';
+import axios from 'axios';
 
 const props = defineProps({
     invoices: Object,
@@ -62,6 +63,11 @@ const form = useForm({
     remaining_delivery_qty: 0,
 });
 
+const isOldCustomer = ref(false);
+const searchResults = ref([]);
+const showSearchResults = ref(false);
+const previousDue = ref(0);
+
 const delivaryForm = useForm({
     invoice_no: props.invoiceNumber,
     delivery_no: props.deliveryNumber,
@@ -89,9 +95,46 @@ const isValidPhone = ref(true);
 
 // Bangladesh phone validation
 const validatePhone = () => {
-    const regex = /^01[3-9][0-9]{8}$/;
+    const regex = /(^(\+88|0088)?(01){1}[3-9]{1}(\d){8})$/;
     isValidPhone.value = regex.test(form.phone);
     isValidPhone.value = regex.test(delivaryForm.driver_phone);
+};
+
+const handleCustomerPhoneInput = () => {
+    validatePhone();
+    previousDue.value = 0;
+
+    if (isOldCustomer.value && form.phone.length >= 11) {
+        searchCustomer(form.phone);
+    }
+};
+
+const searchCustomer = async (query) => {
+    if (!query) {
+        searchResults.value = [];
+        showSearchResults.value = false;
+        return;
+    }
+    try {
+        const response = await axios.get(route('customers.search'), { params: { query } });
+        searchResults.value = response.data;
+        showSearchResults.value = true;
+        
+        // Auto select if exact match on phone
+        if (response.data.length === 1 && response.data[0].phone === query) {
+             selectCustomer(response.data[0]);
+        }
+    } catch (error) {
+        console.error(error);
+    }
+};
+
+const selectCustomer = (customer) => {
+    form.customer_name = customer.name;
+    form.phone = customer.phone;
+    form.address = customer.address;
+    previousDue.value = customer.due_amount;
+    showSearchResults.value = false;
 };
 
 // Row change handlers
@@ -918,9 +961,16 @@ onMounted(() => {
 
                             <form @submit.prevent="submit">
                                 <div class="modal-body row">
+                                    <div class="col-12 mb-3" v-if="previousDue > 0">
+                                        <div class="alert alert-danger py-2 px-3 mb-0 d-flex align-items-center justify-content-between">
+                                            <strong><i class='bx bx-error-circle'></i> পূর্বের বাকি:</strong>
+                                            <span class="fs-5 fw-bold">{{ previousDue }} টাকা</span>
+                                        </div>
+                                    </div>
+
                                     <div class="col-md-6 mb-3">
-                                        <a href="javascript:;" class="btn btn-primary btn-sm me-2">নতুন কাস্টমার</a>
-                                        <a href="javascript:;" class="btn btn-outline-success btn-sm">পুরাতন কাস্টমার</a>
+                                        <a href="javascript:;" class="btn btn-sm me-2" :class="!isOldCustomer ? 'btn-primary' : 'btn-outline-primary'" @click="isOldCustomer = false; form.reset(); previousDue=0;">নতুন কাস্টমার</a>
+                                        <a href="javascript:;" class="btn btn-sm" :class="isOldCustomer ? 'btn-primary' : 'btn-outline-success'" @click="isOldCustomer = true; form.reset(); previousDue=0;">পুরাতন কাস্টমার</a>
                                     </div>
                                     <div class="col-md-3 mb-3 pe-md-0">
                                         <Input type="text" v-model="form.invoice_no" class="form-control form-control-sm" :class="[form.errors.invoice_no ? 'border-danger mb-1' : '']" placeholder="চালান নম্বর" readonly/>
@@ -931,16 +981,26 @@ onMounted(() => {
                                         <InputError :message="form.errors.invoice_date" />
                                     </div>
 
-                                    <div class="col-sm-6 col-md-4 mb-3">
+                                    <div class="col-sm-6 col-md-4 mb-3 position-relative">
                                         <label class="form-label">ফোন নম্বর <span class="text-danger">*</span></label>
                                         <Input
                                           v-model="form.phone"
                                           class="form-control form-control-sm"
                                           placeholder="ফোন নম্বর"
                                           :class="[!isValidPhone && form.phone ? 'border-danger' : '', form.errors.phone ? 'border-danger mb-1' : '']"
-                                          @input="validatePhone"
+                                          @input="handleCustomerPhoneInput"
                                           required
+                                          autocomplete="off"
                                         />
+
+                                        <!-- Search Results Dropdown -->
+                                        <ul v-if="showSearchResults && searchResults.length > 0 && isOldCustomer" class="list-group position-absolute w-100 shadow-sm" style="z-index: 1050; top: 100%;">
+                                            <li v-for="customer in searchResults" :key="customer.id" class="list-group-item list-group-item-action p-2" @click="selectCustomer(customer)" style="cursor: pointer;">
+                                                <div class="fw-bold">{{ customer.name }}</div>
+                                                <small class="text-muted">{{ customer.phone }}</small>
+                                            </li>
+                                        </ul>
+
                                         <!-- Frontend validation message -->
                                         <small v-if="!isValidPhone && form.phone" class="text-danger">
                                           ভুল ফোন নম্বর! (সঠিক: 017XXXXXXXX)
