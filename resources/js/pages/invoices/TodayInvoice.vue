@@ -66,6 +66,7 @@ const form = useForm({
 const isOldCustomer = ref(false);
 const searchResults = ref([]);
 const showSearchResults = ref(false);
+const activeSearchField = ref('');
 const previousDue = ref(0);
 
 const delivaryForm = useForm({
@@ -76,6 +77,7 @@ const delivaryForm = useForm({
     address: '',
     delivery_date: '',
     note: '',
+    send_sms: false,
     
 
     next_delivery_date: '',
@@ -105,11 +107,19 @@ const handleCustomerPhoneInput = () => {
     previousDue.value = 0;
 
     if (isOldCustomer.value && form.phone.length >= 11) {
-        searchCustomer(form.phone);
+        searchCustomer(form.phone, 'phone');
     }
 };
 
-const searchCustomer = async (query) => {
+const handleCustomerNameInput = () => {
+    previousDue.value = 0;
+    if (isOldCustomer.value && form.customer_name.length >= 2) {
+        searchCustomer(form.customer_name, 'name');
+    }
+};
+
+const searchCustomer = async (query, field) => {
+    activeSearchField.value = field;
     if (!query) {
         searchResults.value = [];
         showSearchResults.value = false;
@@ -121,7 +131,7 @@ const searchCustomer = async (query) => {
         showSearchResults.value = true;
         
         // Auto select if exact match on phone
-        if (response.data.length === 1 && response.data[0].phone === query) {
+        if (field === 'phone' && response.data.length === 1 && response.data[0].phone === query) {
              selectCustomer(response.data[0]);
         }
     } catch (error) {
@@ -994,7 +1004,7 @@ onMounted(() => {
                                         />
 
                                         <!-- Search Results Dropdown -->
-                                        <ul v-if="showSearchResults && searchResults.length > 0 && isOldCustomer" class="list-group position-absolute w-100 shadow-sm" style="z-index: 1050; top: 100%;">
+                                        <ul v-if="showSearchResults && searchResults.length > 0 && isOldCustomer && activeSearchField === 'phone'" class="list-group position-absolute w-100 shadow-sm" style="z-index: 1050; top: 100%;">
                                             <li v-for="customer in searchResults" :key="customer.id" class="list-group-item list-group-item-action p-2" @click="selectCustomer(customer)" style="cursor: pointer;">
                                                 <div class="fw-bold">{{ customer.name }}</div>
                                                 <small class="text-muted">{{ customer.phone }}</small>
@@ -1009,10 +1019,18 @@ onMounted(() => {
                                         <InputError :message="form.errors.phone" />
                                       </div>
 
-                                    <div class="col-sm-6 col-md-4 mb-3">
+                                    <div class="col-sm-6 col-md-4 mb-3 position-relative">
                                         <label class="form-label">কাস্টমারের নাম <span class="text-danger">*</span></label>
-                                        <Input v-model="form.customer_name" class="form-control form-control-sm" placeholder="কাস্টমারের নাম" :class="[form.errors.customer_name ? 'border-danger mb-1' : '']" required/>
+                                        <Input v-model="form.customer_name" class="form-control form-control-sm" placeholder="কাস্টমারের নাম" :class="[form.errors.customer_name ? 'border-danger mb-1' : '']" @input="handleCustomerNameInput" required autocomplete="off"/>
                                         <InputError :message="form.errors.customer_name" />
+
+                                        <!-- Search Results Dropdown -->
+                                        <ul v-if="showSearchResults && searchResults.length > 0 && isOldCustomer && activeSearchField === 'name'" class="list-group position-absolute w-100 shadow-sm" style="z-index: 1050; top: 100%;">
+                                            <li v-for="customer in searchResults" :key="customer.id" class="list-group-item list-group-item-action p-2" @click="selectCustomer(customer)" style="cursor: pointer;">
+                                                <div class="fw-bold">{{ customer.name }}</div>
+                                                <small class="text-muted">{{ customer.phone }}</small>
+                                            </li>
+                                        </ul>
                                     </div>
 
                                     <div class="col-sm-6 col-md-4 mb-3">
@@ -1358,7 +1376,7 @@ onMounted(() => {
                             <div class="modal-body" v-if="selectedInvoice">
                                 <div class="row m-1">
                                     <div class="text-center font-bold" style="background-color: #f2d0d0; padding: 6px 8px;color: #d00808;border-radius: 2px;">
-                                        Kamran এর বাকি রয়েছেঃ 20,000 টাকা
+                                        {{ selectedInvoice.customer.name }} এর বাকি রয়েছেঃ {{ Number(selectedInvoice.customer.due_amount || 0).toFixed(2) }} টাকা
                                     </div>
                                 </div>
 
@@ -1485,13 +1503,19 @@ onMounted(() => {
                                 </div>
                             </div>
             
-                            <div class="modal-footer">
-                                <button class="btn btn-secondary btn-sm" @click="showDeliveryModal = false">Close</button>
-                                <button type="submit" class="btn btn-primary btn-sm">
-                                    <i v-if="spinBtn" class="bx bx-loader bx-spin"></i>
-                                    <i v-else class="fadeIn animated bx bx-plus-medical me-1" style="font-size: small;"></i>
-                                      Save
-                                </button>
+                            <div class="modal-footer d-flex justify-content-between">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="smsSwitch" v-model="delivaryForm.send_sms">
+                                    <label class="form-check-label" for="smsSwitch">SMS পাঠান</label>
+                                </div>
+                                <div>
+                                    <button class="btn btn-secondary btn-sm me-2" @click="showDeliveryModal = false">Close</button>
+                                    <button type="submit" class="btn btn-primary btn-sm">
+                                        <i v-if="spinBtn" class="bx bx-loader bx-spin"></i>
+                                        <i v-else class="fadeIn animated bx bx-plus-medical me-1" style="font-size: small;"></i>
+                                          Save
+                                    </button>
+                                </div>
                             </div>
                         </form>
                         </div>

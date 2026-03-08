@@ -73,7 +73,7 @@ import { Head } from '@inertiajs/vue3';
                         <div class="d-flex align-items-center">
                             <div>
                                 <p class="mb-0 text-secondary">বাকি বিক্রয়</p>
-                                <h4 class="my-1 text-success">৳ 34.6%</h4>
+                                <h4 class="my-1 text-success">৳ 34.6</h4>
                             </div>
                         </div>
                     </div>
@@ -85,7 +85,7 @@ import { Head } from '@inertiajs/vue3';
                         <div class="d-flex align-items-center">
                             <div>
                                 <p class="mb-0 text-secondary">মোট পেমেন্ট</p>
-                                <h4 class="my-1 text-warning">৳ 8.4K</h4>
+                                <h4 class="my-1 text-warning">৳ 8</h4>
                             </div>
                         </div>
                     </div>
@@ -93,32 +93,23 @@ import { Head } from '@inertiajs/vue3';
             </div>
         </div>
 
-        <div class="row g-3">
+        <div class="row g-2">
             <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
                 <div class="card border-success">
                     <div class="card-header bg-success text-white fw-bold text-center">চালান</div>
-                    <div class="card-body text-center">
+                    <div class="card-body text-center p-1">
                         <div class="table-responsive">
                             <table class="table table-sm table-striped table-hover mb-0">
                                 <thead class="table-success">
                                     <tr>
-                                        <th class="text-start">মাঠ</th>
+                                        <th class="text-start">শ্রেণি</th>
+                                        <th class="text-start">চালান</th>
                                         <th class="text-end">পরিমাণ</th>
+                                        <th class="text-end">মোট মূল্য</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <td class="text-start">বিক্রয়</td>
-                                        <td class="text-end">৳ 15,000</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-start">খরচ</td>
-                                        <td class="text-end">৳ 5,000</td>
-                                    </tr>
-                                    <tr class="fw-bold">
-                                        <td class="text-start">মোট</td>
-                                        <td class="text-end text-success">৳ 10,000</td>
-                                    </tr>
+                                    
                                 </tbody>
                             </table>
                         </div>
@@ -129,7 +120,29 @@ import { Head } from '@inertiajs/vue3';
             <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
                 <div class="card border-danger">
                     <div class="card-header bg-danger text-white fw-bold text-center">পেমেন্ট</div>
-                    <div class="card-body text-center">
+                    <div class="card-body text-center p-1">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped table-hover mb-0">
+                                <thead class="table-danger">
+                                    <tr>
+                                        <th class="text-start">খতিয়ান</th>
+                                        <th class="text-end">পরিমাণ</th>
+                                        <th class="text-end">খতিয়ান দেওয়া</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
+                <div class="card border-danger">
+                    <div class="card-header bg-primary text-white fw-bold text-center">প্রোডাকশন</div>
+                    <div class="card-body text-center p-1">
                         <div class="table-responsive">
                             <table class="table table-sm table-striped table-hover mb-0">
                                 <thead class="table-danger">
@@ -139,18 +152,7 @@ import { Head } from '@inertiajs/vue3';
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <td class="text-start">বিক্রয়</td>
-                                        <td class="text-end">৳ 15,000</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-start">খরচ</td>
-                                        <td class="text-end">৳ 5,000</td>
-                                    </tr>
-                                    <tr class="fw-bold">
-                                        <td class="text-start">মোট</td>
-                                        <td class="text-end text-success">৳ 10,000</td>
-                                    </tr>
+                                
                                 </tbody>
                             </table>
                         </div>
@@ -159,60 +161,19 @@ import { Head } from '@inertiajs/vue3';
             </div>
 
             <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
-                <div class="card border-primary">
-                    <div class="card-header bg-primary text-white fw-bold text-center">প্রোডাকশন</div>
-                    <div class="card-body text-center">
-                        <div class="table-responsive">
-                            <table class="table table-sm table-striped table-hover mb-0">
-                                <thead class="table-primary">
-                                    <tr>
-                                        <th class="text-start">মাঠ</th>
-                                        <th class="text-end">পরিমাণ</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td class="text-start">বিক্রয়</td>
-                                        <td class="text-end">৳ 15,000</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-start">খরচ</td>
-                                        <td class="text-end">৳ 5,000</td>
-                                    </tr>
-                                    <tr class="fw-bold">
-                                        <td class="text-start">মোট</td>
-                                        <td class="text-end text-success">৳ 10,000</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card border-info">
+               <div class="card border-info">
                     <div class="card-header bg-info text-white fw-bold text-center">ডেলিভারি</div>
-                    <div class="card-body text-center">
+                    <div class="card-body text-center p-1">
                         <div class="table-responsive">
                             <table class="table table-sm table-striped table-hover mb-0">
                                 <thead class="table-info">
                                     <tr>
-                                        <th class="text-start">বিবরণ</th>
+                                        <th class="text-start">শ্রেণি</th>
                                         <th class="text-end">পরিমাণ</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <td class="text-start">বিক্রয়</td>
-                                        <td class="text-end">৳ 15,000</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-start">খরচ</td>
-                                        <td class="text-end">৳ 5,000</td>
-                                    </tr>
-                                    <tr class="fw-bold">
-                                        <td class="text-start">মোট</td>
-                                        <td class="text-end text-secondary">৳ 10,000</td>
-                                    </tr>
+                                    
                                 </tbody>
                             </table>
                         </div>
@@ -223,7 +184,7 @@ import { Head } from '@inertiajs/vue3';
             <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
                 <div class="card border-success">
                     <div class="card-header bg-success text-white fw-bold text-center">লোড</div>
-                    <div class="card-body text-center">
+                    <div class="card-body text-center p-1">
                         <div class="table-responsive">
                             <table class="table table-sm table-striped table-hover mb-0">
                                 <thead class="table-success">
@@ -233,18 +194,7 @@ import { Head } from '@inertiajs/vue3';
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <td class="text-start">বিক্রয়</td>
-                                        <td class="text-end">৳ 15,000</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-start">খরচ</td>
-                                        <td class="text-end">৳ 5,000</td>
-                                    </tr>
-                                    <tr class="fw-bold">
-                                        <td class="text-start">মোট</td>
-                                        <td class="text-end text-success">৳ 10,000</td>
-                                    </tr>
+                                
                                 </tbody>
                             </table>
                         </div>
@@ -253,28 +203,17 @@ import { Head } from '@inertiajs/vue3';
 
                 <div class="card border-secondary">
                     <div class="card-header bg-secondary text-white fw-bold text-center">আনলোড</div>
-                    <div class="card-body text-center">
+                    <div class="card-body text-center p-1">
                         <div class="table-responsive">
                             <table class="table table-sm table-striped table-hover mb-0">
                                 <thead class="table-secondary">
                                     <tr>
-                                        <th class="text-start">বিবরণ</th>
+                                        <th class="text-start">শ্রেণি</th>
                                         <th class="text-end">পরিমাণ</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <td class="text-start">বিক্রয়</td>
-                                        <td class="text-end">৳ 15,000</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-start">খরচ</td>
-                                        <td class="text-end">৳ 5,000</td>
-                                    </tr>
-                                    <tr class="fw-bold">
-                                        <td class="text-start">মোট</td>
-                                        <td class="text-end text-secondary">৳ 10,000</td>
-                                    </tr>
+                                    
                                 </tbody>
                             </table>
                         </div>

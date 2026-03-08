@@ -71,6 +71,7 @@ const delivaryForm = useForm({
     address: '',
     delivery_date: '',
     note: '',
+    send_sms: false,
     
 
     next_delivery_date: '',
@@ -1291,7 +1292,7 @@ onMounted(() => {
                             <div class="modal-body" v-if="selectedInvoice">
                                 <div class="row m-1">
                                     <div class="text-center font-bold" style="background-color: #f2d0d0; padding: 6px 8px;color: #d00808;border-radius: 2px;">
-                                        Kamran এর বাকি রয়েছেঃ 20,000 টাকা
+                                        {{ selectedInvoice.customer.name }} এর বাকি রয়েছেঃ {{ Number(selectedInvoice.customer.due_amount || 0).toFixed(2) }} টাকা
                                     </div>
                                 </div>
 
@@ -1418,13 +1419,19 @@ onMounted(() => {
                                 </div>
                             </div>
             
-                            <div class="modal-footer">
-                                <button class="btn btn-secondary btn-sm" @click="showDeliveryModal = false">Close</button>
-                                <button type="submit" class="btn btn-primary btn-sm">
-                                    <i v-if="spinBtn" class="bx bx-loader bx-spin"></i>
-                                    <i v-else class="fadeIn animated bx bx-plus-medical me-1" style="font-size: small;"></i>
-                                      Save
-                                </button>
+                            <div class="modal-footer d-flex justify-content-between">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="smsSwitchAdv" v-model="delivaryForm.send_sms">
+                                    <label class="form-check-label" for="smsSwitchAdv">SMS পাঠান</label>
+                                </div>
+                                <div>
+                                    <button class="btn btn-secondary btn-sm me-2" @click="showDeliveryModal = false">Close</button>
+                                    <button type="submit" class="btn btn-primary btn-sm">
+                                        <i v-if="spinBtn" class="bx bx-loader bx-spin"></i>
+                                        <i v-else class="fadeIn animated bx bx-plus-medical me-1" style="font-size: small;"></i>
+                                          Save
+                                    </button>
+                                </div>
                             </div>
                         </form>
                         </div>

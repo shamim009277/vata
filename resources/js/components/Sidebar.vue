@@ -67,12 +67,24 @@ const isActive = (menu) => {
 const isRouteActive = (item) => {
     // Check by URL match if available
     if (item.url) {
-        return page.url === item.url;
+         return page.url === item.url || page.url.startsWith(item.url);
     }
-    // Check by route match if available (assumes Ziggy's route() is global)
+    // Check by route match if available
     if (item.route && typeof route === 'function') {
         try {
-            return route().current(item.route);
+            // Check exact match
+            if (route().current(item.route)) {
+                return true;
+            }
+            // Check wildcard match if route follows resource pattern (e.g. users.index -> users.*)
+            if (item.route.endsWith('.index')) {
+                const resourceName = item.route.replace('.index', '.*');
+                if (route().current(resourceName)) {
+                    return true;
+                }
+            }
+             // Also check simply by prefix for non-standard routes
+            return route().current(item.route + '*');
         } catch (e) {
             return false;
         }
@@ -82,17 +94,27 @@ const isRouteActive = (item) => {
 
 const checkActiveMenu = () => {
     if (!menus.value) return;
-    const index = menus.value.findIndex(menu => isActive(menu));
-    if (index !== -1) {
-        activeIndex.value = index;
+    
+    // Find active menu index
+    for (let i = 0; i < menus.value.length; i++) {
+        const menu = menus.value[i];
+        if (isActive(menu)) {
+            activeIndex.value = i;
+            return; // Stop after finding the first active parent
+        }
+    }
+    // If no active menu found (e.g. dashboard or unrelated route), activeIndex could be null or keep previous?
+    // Usually we want to close others if we moved to a root item?
+    // But if root item doesn't have children, activeIndex doesn't matter for collapse.
+    
+    // Check if current route is a root item without children
+    const activeRootIndex = menus.value.findIndex(menu => !menu.children && isRouteActive(menu));
+    if (activeRootIndex !== -1) {
+         activeIndex.value = activeRootIndex;
     }
 }
 
 onMounted(() => {
-    // Initialize metisMenu manually since it might not be initialized on subsequent Inertia visits
-    if (window.jQuery && window.jQuery().metisMenu) {
-        window.jQuery('#menu').metisMenu();
-    }
     checkActiveMenu();
 })
 

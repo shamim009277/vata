@@ -70,6 +70,7 @@ const delivaryForm = useForm({
     address: '',
     delivery_date: '',
     note: '',
+    send_sms: false,
     
 
     next_delivery_date: '',
@@ -1404,13 +1405,19 @@ onMounted(() => {
                                 </div>
                             </div>
             
-                            <div class="modal-footer">
-                                <button class="btn btn-secondary btn-sm" @click="showDeliveryModal = false">Close</button>
-                                <button type="submit" class="btn btn-primary btn-sm">
-                                    <i v-if="spinBtn" class="bx bx-loader bx-spin"></i>
-                                    <i v-else class="fadeIn animated bx bx-plus-medical me-1" style="font-size: small;"></i>
-                                      Save
-                                </button>
+                            <div class="modal-footer d-flex justify-content-between">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="smsSwitchDelivery" v-model="delivaryForm.send_sms">
+                                    <label class="form-check-label" for="smsSwitchDelivery">SMS পাঠান</label>
+                                </div>
+                                <div>
+                                    <button class="btn btn-secondary btn-sm me-2" @click="showDeliveryModal = false">Close</button>
+                                    <button type="submit" class="btn btn-primary btn-sm">
+                                        <i v-if="spinBtn" class="bx bx-loader bx-spin"></i>
+                                        <i v-else class="fadeIn animated bx bx-plus-medical me-1" style="font-size: small;"></i>
+                                          Save
+                                    </button>
+                                </div>
                             </div>
                         </form>
                         </div>

@@ -7,6 +7,7 @@ use App\Models\Delivery;
 use App\Models\Invoice;
 use App\Models\InvoiceDetails;
 use App\Models\Item;
+use App\Services\SmsService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -204,6 +205,18 @@ class DeliveryController extends Controller
                 'is_active' => 1
             ]);
             $delivery->save();
+
+            // Send SMS if requested
+            if ($request->send_sms) {
+                try {
+                    $smsService = new SmsService();
+                    $message = "প্রিয় গ্রাহক, আপনার ডেলিভারি সম্পন্ন হয়েছে। ডেলিভারি নং: {$delivery->delivery_no}, পরিমাণ: {$delivery->delivery_qty}, গাড়ী নং: {$delivery->truck_number}। ধন্যবাদ।";
+                    $smsService->send($request->phone, $message);
+                } catch (\Exception $e) {
+                    Log::error('SMS Sending Error: ' . $e->getMessage());
+                    // Don't fail the transaction if SMS fails, just log it
+                }
+            }
 
             DB::commit();
             return redirect()->back()->with('success', 'চালান সংরক্ষণে সফলভাবে সংরক্ষণ হয়েছে!');
