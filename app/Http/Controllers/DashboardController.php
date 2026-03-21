@@ -212,6 +212,85 @@ class DashboardController extends Controller
         $unloadTable = $unloadBreakdown->get();
 
 
+        // --- Charts Data ---
+        
+        // 1. Pie Chart: Challan vs Delivery (Season Wise)
+        $pieChallanQuery = Invoice::query();
+        $applyDateFilter($pieChallanQuery, 'invoice_date');
+        $totalChallanQuantity = $pieChallanQuery->sum('quantity');
+
+        $pieDeliveryQuery = Delivery::query();
+        $applyDateFilter($pieDeliveryQuery, 'delivery_date');
+        $totalDeliveryQuantity = $pieDeliveryQuery->sum('quantity');
+
+        $pieChartData = [
+            'series' => [$totalChallanQuantity, $totalDeliveryQuantity],
+            'labels' => ['চালান', 'ডেলিভারি']
+        ];
+
+        // 2. Radar Chart: Sales & Payments (Season Wise)
+        $radarSalesQuery = Invoice::query();
+        $applyDateFilter($radarSalesQuery, 'invoice_date');
+        $seasonTotalSales = $radarSalesQuery->sum('total_amount');
+        $seasonCashSales = $radarSalesQuery->sum('paid_amount');
+        $seasonDueSales = $radarSalesQuery->sum('due_amount');
+
+        $radarPaymentQuery = PaymentKatha::query();
+        $applyDateFilter($radarPaymentQuery, 'payment_date');
+        $seasonTotalPayment = $radarPaymentQuery->sum('amount');
+        
+        $radarChartData = [
+            'series' => [
+                [
+                    'name' => 'পরিমাণ',
+                    'data' => [$seasonTotalSales, $seasonCashSales, $seasonDueSales, $seasonTotalPayment]
+                ]
+            ],
+            'labels' => ['মোট বিক্রয়', 'নগদ বিক্রয়', 'বাকি বিক্রয়', 'মোট খরচ/পেমেন্ট']
+        ];
+
+        // 3. Bar Chart: Monthly Challan vs Delivery (Season Wise)
+        // We only group by month, but we still apply the overall date filter to restrict the dataset
+        $barChallanQuery = Invoice::query();
+        $applyDateFilter($barChallanQuery, 'invoice_date');
+        $monthlyChallan = $barChallanQuery
+            ->select(DB::raw('MONTH(invoice_date) as month'), DB::raw('SUM(quantity) as total'))
+            ->groupBy('month')
+            ->pluck('total', 'month')->toArray();
+
+        $barDeliveryQuery = Delivery::query();
+        $applyDateFilter($barDeliveryQuery, 'delivery_date');
+        $monthlyDelivery = $barDeliveryQuery
+            ->select(DB::raw('MONTH(delivery_date) as month'), DB::raw('SUM(quantity) as total'))
+            ->groupBy('month')
+            ->pluck('total', 'month')->toArray();
+
+        $months = [];
+        $challanSeries = [];
+        $deliverySeries = [];
+        
+        for ($m = 1; $m <= 12; $m++) {
+            $monthName = Carbon::create()->month($m)->locale('bn')->translatedFormat('F');
+            $months[] = $monthName;
+            $challanSeries[] = $monthlyChallan[$m] ?? 0;
+            $deliverySeries[] = $monthlyDelivery[$m] ?? 0;
+        }
+
+        $barChartData = [
+            'series' => [
+                [
+                    'name' => 'চালান',
+                    'data' => $challanSeries
+                ],
+                [
+                    'name' => 'ডেলিভারি',
+                    'data' => $deliverySeries
+                ]
+            ],
+            'labels' => $months
+        ];
+
+
         return Inertia::render('Dashboard1', [
             'stats' => [
                 'total_sales' => $totalSales,
@@ -226,6 +305,11 @@ class DashboardController extends Controller
                 'delivery' => $deliveryTable,
                 'load' => $loadTable,
                 'unload' => $unloadTable,
+            ],
+            'charts' => [
+                'pie' => $pieChartData,
+                'radar' => $radarChartData,
+                'bar' => $barChartData,
             ],
             'filters' => [
                 'filter' => $filterType,

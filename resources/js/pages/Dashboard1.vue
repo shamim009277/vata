@@ -1,12 +1,14 @@
 <script lang="ts" setup>
 import AppLayout1 from '@/layouts/AppLayout1.vue';
 import { Head, router } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import { ref, computed } from 'vue';
 import { route } from 'ziggy-js';
+import VueApexCharts from 'vue3-apexcharts';
 
 const props = defineProps({
     stats: Object,
     tables: Object,
+    charts: Object,
     filters: Object
 });
 
@@ -53,6 +55,60 @@ const calculateTotal = (tableData, key) => {
     if (!tableData) return 0;
     return tableData.reduce((acc, item) => acc + (Number(item[key]) || 0), 0);
 };
+
+// --- Chart Configurations ---
+
+// Helper to check if chart has any data
+const hasChartData = (series) => {
+    if (!series || !series.length) return false;
+    
+    // For single array of numbers (Pie)
+    if (typeof series[0] === 'number' || typeof series[0] === 'string') {
+        return series.some(val => Number(val) > 0);
+    }
+    
+    // For nested arrays/objects (Radar, Bar)
+    return series.some(s => s.data && s.data.some(val => Number(val) > 0));
+};
+
+// 1. Pie Chart Options
+const pieChartOptions = computed(() => ({
+    chart: { type: 'pie', height: 350 },
+    labels: props.charts?.pie?.labels || [],
+    colors: ['#0d6efd', '#17a00e'], // Blue for Challan, Green for Delivery
+    legend: { position: 'bottom' },
+    dataLabels: { enabled: true, formatter: (val) => `${val.toFixed(1)}%` },
+    tooltip: { y: { formatter: (val) => `${formatNumber(val)}` } }
+}));
+const pieChartSeries = computed(() => props.charts?.pie?.series?.map(Number) || []);
+
+// 2. Radar Chart Options
+const radarChartOptions = computed(() => ({
+    chart: { type: 'radar', height: 350, toolbar: { show: false } },
+    labels: props.charts?.radar?.labels || [],
+    stroke: { width: 2 },
+    fill: { opacity: 0.2 },
+    markers: { size: 4 },
+    colors: ['#f41127'],
+    yaxis: { show: false },
+    tooltip: { y: { formatter: (val) => `৳ ${formatNumber(val)}` } }
+}));
+const radarChartSeries = computed(() => props.charts?.radar?.series || []);
+
+// 3. Bar Chart Options
+const barChartOptions = computed(() => ({
+    chart: { type: 'bar', height: 350, stacked: false, toolbar: { show: false } },
+    plotOptions: { bar: { horizontal: false, columnWidth: '55%', endingShape: 'rounded' } },
+    dataLabels: { enabled: false },
+    stroke: { show: true, width: 2, colors: ['transparent'] },
+    xaxis: { categories: props.charts?.bar?.labels || [] },
+    yaxis: { title: { text: 'পরিমাণ' } },
+    fill: { opacity: 1 },
+    colors: ['#0d6efd', '#17a00e'],
+    tooltip: { y: { formatter: (val) => `${formatNumber(val)}` } }
+}));
+const barChartSeries = computed(() => props.charts?.bar?.series || []);
+
 </script>
 <template>
     <Head title="Dashboard" />
@@ -161,6 +217,54 @@ const calculateTotal = (tableData, key) => {
                             <div class="widgets-icons-2 rounded-circle bg-gradient-blooker text-white ms-auto">
                                 <i class='bx bxs-group'></i>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🔹 Charts Section -->
+        <div class="row g-3 mb-4">
+            <!-- Pie Chart: Challan vs Delivery -->
+            <div class="col-12 col-lg-4">
+                <div class="card shadow-sm radius-10 h-100">
+                    <div class="card-header bg-transparent border-bottom">
+                        <h6 class="mb-0 fw-bold"><i class='bx bx-pie-chart-alt text-primary me-1'></i>চালান বনাম ডেলিভারি</h6>
+                    </div>
+                    <div class="card-body">
+                        <VueApexCharts v-if="hasChartData(pieChartSeries)" type="pie" height="350" :options="pieChartOptions" :series="pieChartSeries" />
+                        <div v-else class="d-flex justify-content-center align-items-center text-muted" style="height: 350px;">
+                            <p>কোন তথ্য পাওয়া যায়নি</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Radar Chart: Sales & Payments -->
+            <div class="col-12 col-lg-4">
+                <div class="card shadow-sm radius-10 h-100">
+                    <div class="card-header bg-transparent border-bottom">
+                        <h6 class="mb-0 fw-bold"><i class='bx bx-radar text-danger me-1'></i>বিক্রয় ও পেমেন্ট চিত্র</h6>
+                    </div>
+                    <div class="card-body d-flex justify-content-center">
+                        <VueApexCharts v-if="hasChartData(radarChartSeries)" type="radar" height="350" :options="radarChartOptions" :series="radarChartSeries" />
+                        <div v-else class="d-flex justify-content-center align-items-center text-muted w-100" style="height: 350px;">
+                            <p>কোন তথ্য পাওয়া যায়নি</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bar Chart: Monthly Comparison -->
+            <div class="col-12 col-lg-4">
+                <div class="card shadow-sm radius-10 h-100">
+                    <div class="card-header bg-transparent border-bottom">
+                        <h6 class="mb-0 fw-bold"><i class='bx bx-bar-chart text-success me-1'></i>মাসিক চালান ও ডেলিভারি</h6>
+                    </div>
+                    <div class="card-body">
+                        <VueApexCharts v-if="hasChartData(barChartSeries)" type="bar" height="350" :options="barChartOptions" :series="barChartSeries" />
+                        <div v-else class="d-flex justify-content-center align-items-center text-muted" style="height: 350px;">
+                            <p>কোন তথ্য পাওয়া যায়নি</p>
                         </div>
                     </div>
                 </div>
