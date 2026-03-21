@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html>
+<html lang="bn">
 <head>
-    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>Challan Report</title>
     <style>
         body {
-            font-family: 'SolaimanLipi', sans-serif;
+            font-family: 'solaimanlipi', sans-serif;
             font-size: 11px;
             color: #333;
             line-height: 1.4;

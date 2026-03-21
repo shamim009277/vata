@@ -100,6 +100,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/reports/delivery/pdf', [App\Http\Controllers\ReportController::class, 'deliveryReportPdf'])->name('reports.delivery.pdf');
     Route::get('/reports/challan', [App\Http\Controllers\ReportController::class, 'challanReport'])->name('reports.challan');
     Route::get('/reports/challan/pdf', [App\Http\Controllers\ReportController::class, 'challanReportPdf'])->name('reports.challan.pdf');
+    Route::get('/reports/raw-brick-production', [App\Http\Controllers\ReportController::class, 'rawBrickProductionReport'])->name('reports.raw_brick_production');
+    Route::get('/reports/raw-brick-production/pdf', [App\Http\Controllers\ReportController::class, 'rawBrickProductionReportPdf'])->name('reports.raw_brick_production.pdf');
 
     // Administration Routes
     Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], function () {

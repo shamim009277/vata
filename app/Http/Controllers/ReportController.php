@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Delivery;
 use App\Models\Invoice;
 use App\Models\BusinessStore;
+use App\Models\RowProduction;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Mpdf\Mpdf;
@@ -16,7 +17,7 @@ class ReportController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:reports.delivery', only: ['deliveryReport', 'deliveryReportPdf', 'challanReport', 'challanReportPdf']),
+            new Middleware('permission:reports.delivery', only: ['deliveryReport', 'deliveryReportPdf', 'challanReport', 'challanReportPdf', 'rawBrickProductionReport', 'rawBrickProductionReportPdf']),
         ];
     }
 
@@ -106,6 +107,7 @@ class ReportController extends Controller implements HasMiddleware
             'margin_right' => 10,
             'margin_top' => 10,
             'margin_bottom' => 10,
+            'tempDir' => storage_path('app/temp'), // Ensure tempDir is writable
         ]);
 
         $mpdf->WriteHTML($html);
@@ -198,9 +200,101 @@ class ReportController extends Controller implements HasMiddleware
             'margin_right' => 10,
             'margin_top' => 10,
             'margin_bottom' => 10,
+            'tempDir' => storage_path('app/temp'), // Ensure tempDir is writable
         ]);
 
         $mpdf->WriteHTML($html);
         return $mpdf->Output('challan_report.pdf', 'I');
+    }
+
+    public function rawBrickProductionReport(Request $request)
+    {
+        $query = RowProduction::query()->with(['field']);
+
+        if ($request->filled('date')) {
+            $query->whereDate('product_date', $request->date);
+        }
+
+        if ($request->filled('month')) {
+            $parts = explode('-', $request->month);
+            if (count($parts) == 2) {
+                $query->whereYear('product_date', $parts[0])
+                      ->whereMonth('product_date', $parts[1]);
+            }
+        }
+
+        if ($request->filled('season')) {
+            $query->where('season', $request->season);
+        }
+
+        $seasons = RowProduction::select('season')->distinct()->whereNotNull('season')->pluck('season');
+
+        $productions = $query->latest()->get();
+
+        return Inertia::render('Reports/RawBrickProductionReport', [
+            'productions' => $productions,
+            'filters' => $request->only(['date', 'month', 'season']),
+            'seasons' => $seasons,
+            'business_store' => BusinessStore::first(),
+        ]);
+    }
+
+    public function rawBrickProductionReportPdf(Request $request)
+    {
+        $query = RowProduction::query()->with(['field']);
+
+        if ($request->filled('date')) {
+            $query->whereDate('product_date', $request->date);
+        }
+
+        if ($request->filled('month')) {
+            $parts = explode('-', $request->month);
+            if (count($parts) == 2) {
+                $query->whereYear('product_date', $parts[0])
+                      ->whereMonth('product_date', $parts[1]);
+            }
+        }
+
+        if ($request->filled('season')) {
+            $query->where('season', $request->season);
+        }
+
+        $productions = $query->latest()->get();
+
+        $html = view('reports.raw_brick_production_pdf', [
+            'productions' => $productions,
+            'filters' => $request->only(['date', 'month', 'season']),
+            'business_store' => BusinessStore::first(),
+        ])->render();
+
+        $defaultConfig = (new \Mpdf\Config\ConfigVariables())->getDefaults();
+        $fontDirs = $defaultConfig['fontDir'];
+
+        $defaultFontConfig = (new \Mpdf\Config\FontVariables())->getDefaults();
+        $fontData = $defaultFontConfig['fontdata'];
+
+        $mpdf = new Mpdf([
+            'fontDir' => array_merge($fontDirs, [
+                storage_path('fonts'),
+            ]),
+            'fontdata' => $fontData + [
+                'solaimanlipi' => [
+                    'R' => 'SolaimanLipi.ttf',
+                    'useOTL' => 0xFF,
+                    'useKashida' => 75,
+                ]
+            ],
+            'default_font' => 'solaimanlipi',
+            'mode' => 'utf-8',
+            'format' => 'A4',
+            'margin_left' => 10,
+            'margin_right' => 10,
+            'margin_top' => 10,
+            'margin_bottom' => 10,
+            'tempDir' => storage_path('app/temp'),
+        ]);
+
+        $mpdf->WriteHTML($html);
+        return $mpdf->Output('raw_brick_production_report.pdf', 'I');
     }
 }

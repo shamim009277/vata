@@ -4,7 +4,7 @@ import { Head, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 
 const props = defineProps({
-    invoices: Array,
+    productions: Array,
     filters: Object,
     seasons: Array,
     business_store: Object,
@@ -16,35 +16,23 @@ const form = ref({
     season: props.filters?.season || '',
 });
 
-const totals = computed(() => {
-    const list = props.invoices || [];
-    return list.reduce((acc, inv) => {
-        acc.total += Number(inv?.total_amount) || 0;
-        acc.paid += Number(inv?.paid_amount) || 0;
-        acc.due += Number(inv?.due_amount) || 0;
-        return acc;
-    }, { total: 0, paid: 0, due: 0 });
-});
+const totalQty = computed(() => (props.productions || []).reduce((acc, p) => acc + (Number(p?.quantity) || 0), 0));
 
 const applyFilters = () => {
-    router.get(route('reports.challan'), form.value, {
+    router.get(route('reports.raw_brick_production'), form.value, {
         preserveState: true,
         preserveScroll: true,
     });
 };
 
 const resetFilters = () => {
-    form.value = {
-        date: '',
-        month: '',
-        season: '',
-    };
+    form.value = { date: '', month: '', season: '' };
     applyFilters();
 };
 
 const downloadPdf = () => {
     const params = new URLSearchParams(form.value).toString();
-    window.open(route('reports.challan.pdf') + '?' + params, '_blank');
+    window.open(route('reports.raw_brick_production.pdf') + '?' + params, '_blank');
 };
 
 const printReport = () => {
@@ -53,22 +41,20 @@ const printReport = () => {
 </script>
 
 <template>
-    <Head title="চালান রিপোর্ট" />
+    <Head title="কাঁচা ইট প্রোডাকশন রিপোর্ট" />
 
     <!-- Print Layout (Visible only in print) -->
     <div class="print-layout d-none d-print-block">
-        <!-- Watermark -->
         <div class="watermark" v-if="business_store">
             {{ business_store.store_name }}
         </div>
-
         <div class="text-center mb-4">
             <div v-if="business_store">
                 <h4 class="mb-0 fw-bold">{{ business_store.store_name }}</h4>
                 <p class="mb-0 small">{{ business_store.address }}</p>
                 <p class="mb-2 small">Mobile: {{ business_store.phone }}</p>
             </div>
-            <h6 class="mt-2 text-decoration-underline">Challan Report</h6>
+            <h6 class="mt-2 text-decoration-underline">কাঁচা ইট প্রোডাকশন রিপোর্ট</h6>
             <p class="small">Print Date: {{ new Date().toLocaleDateString() }}</p>
         </div>
         <div class="table-responsive">
@@ -77,33 +63,25 @@ const printReport = () => {
                     <tr>
                         <th style="width: 5%">SL</th>
                         <th>তারিখ</th>
-                        <th>চালান নং</th>
-                        <th>কাস্টমার</th>
-                        <th class="text-end">মোট টাকা</th>
-                        <th class="text-end">জমা</th>
-                        <th class="text-end">বাকি</th>
+                        <th>মাঠ</th>
+                        <th class="text-end">পরিমাণ</th>
                         <th>সিজন</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="(invoice, index) in invoices" :key="invoice.id">
+                    <tr v-for="(p, index) in productions" :key="p.id">
                         <td>{{ index + 1 }}</td>
-                        <td>{{ new Date(invoice.invoice_date).toLocaleDateString() }}</td>
-                        <td>{{ invoice.invoice_no }}</td>
-                        <td>{{ invoice.customer?.name || '-' }}</td>
-                        <td class="text-end">{{ invoice.total_amount }}</td>
-                        <td class="text-end">{{ invoice.paid_amount }}</td>
-                        <td class="text-end">{{ invoice.due_amount }}</td>
-                        <td>{{ invoice.season || '-' }}</td>
+                        <td>{{ p.product_date ? new Date(p.product_date).toLocaleDateString() : '' }}</td>
+                        <td>{{ p.field?.name || '-' }}</td>
+                        <td class="text-end">{{ p.quantity }}</td>
+                        <td>{{ p.season || '-' }}</td>
                     </tr>
-                    <tr v-if="invoices.length === 0">
-                        <td colspan="8" class="text-center">কোনো ডাটা পাওয়া যায়নি</td>
+                    <tr v-if="productions.length === 0">
+                        <td colspan="5" class="text-center">কোনো ডাটা পাওয়া যায়নি</td>
                     </tr>
                     <tr v-else style="background-color: #e8e8e8; font-weight: bold;">
-                        <td colspan="4" class="text-end">সর্বমোট:</td>
-                        <td class="text-end">{{ totals.total.toFixed(2) }}</td>
-                        <td class="text-end">{{ totals.paid.toFixed(2) }}</td>
-                        <td class="text-end">{{ totals.due.toFixed(2) }}</td>
+                        <td colspan="3" class="text-end">মোট পরিমাণ:</td>
+                        <td class="text-end">{{ totalQty }}</td>
                         <td></td>
                     </tr>
                 </tbody>
@@ -117,7 +95,7 @@ const printReport = () => {
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
-                        <h6 class="card-title">চালান রিপোর্ট</h6>
+                        <h6 class="card-title">কাঁচা ইট প্রোডাকশন রিপোর্ট</h6>
                         <div class="d-flex flex-wrap gap-2 mt-3 align-items-end">
                             <div class="form-group">
                                 <label>তারিখ</label>
@@ -151,34 +129,21 @@ const printReport = () => {
                                     <tr>
                                         <th>SL</th>
                                         <th>তারিখ</th>
-                                        <th>চালান নং</th>
-                                        <th>কাস্টমার</th>
-                                        <th>মোট টাকা</th>
-                                        <th>জমা</th>
-                                        <th>বাকি</th>
+                                        <th>মাঠ</th>
+                                        <th class="text-end">পরিমাণ</th>
                                         <th>সিজন</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="(invoice, index) in invoices" :key="invoice.id">
+                                    <tr v-for="(p, index) in productions" :key="p.id">
                                         <td>{{ index + 1 }}</td>
-                                        <td>{{ new Date(invoice.invoice_date).toLocaleDateString() }}</td>
-                                        <td>{{ invoice.invoice_no }}</td>
-                                        <td>{{ invoice.customer?.name || '-' }}</td>
-                                        <td>{{ invoice.total_amount }}</td>
-                                        <td>{{ invoice.paid_amount }}</td>
-                                        <td>{{ invoice.due_amount }}</td>
-                                        <td>{{ invoice.season || '-' }}</td>
+                                        <td>{{ p.product_date ? new Date(p.product_date).toLocaleDateString() : '' }}</td>
+                                        <td>{{ p.field?.name || '-' }}</td>
+                                        <td class="text-end">{{ p.quantity }}</td>
+                                        <td>{{ p.season || '-' }}</td>
                                     </tr>
-                                    <tr v-if="invoices.length === 0">
-                                        <td colspan="8" class="text-center">কোনো ডাটা পাওয়া যায়নি</td>
-                                    </tr>
-                                    <tr v-else class="fw-bold">
-                                        <td colspan="4" class="text-end">সর্বমোট:</td>
-                                        <td>{{ totals.total.toFixed(2) }}</td>
-                                        <td>{{ totals.paid.toFixed(2) }}</td>
-                                        <td>{{ totals.due.toFixed(2) }}</td>
-                                        <td></td>
+                                    <tr v-if="productions.length === 0">
+                                        <td colspan="5" class="text-center">কোনো ডাটা পাওয়া যায়নি</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -192,46 +157,12 @@ const printReport = () => {
 
 <style>
 @media print {
-    /* Hide everything by default if not handled by d-print-none/d-print-block */
-    /* Note: Bootstrap classes d-print-none and d-print-block usually handle this well */
-
-    /* Ensure body takes full width/height and has no margins */
-    @page {
-        size: auto;
-        margin: 5mm;
-    }
-    
-    body {
-        margin: 0;
-        padding: 0;
-        background: white;
-        overflow: visible;
-    }
-
-    /* Print Layout Styling */
-    .print-layout {
-        width: 100%;
-        background: white;
-    }
-
-    /* Table Styling for Print */
-    .print-layout table {
-        width: 100% !important;
-        border-collapse: collapse !important;
-        font-size: 12px;
-    }
-    
-    .print-layout th, .print-layout td {
-        border: 1px solid #000 !important;
-        padding: 4px 8px !important;
-    }
-    
-    .print-layout th {
-        background-color: #f8f9fa !important;
-        -webkit-print-color-adjust: exact;
-    }
-
-    /* Watermark Styling */
+    @page { size: auto; margin: 5mm; }
+    body { margin: 0; padding: 0; background: white; overflow: visible; }
+    .print-layout { width: 100%; background: white; }
+    .print-layout table { width: 100% !important; border-collapse: collapse !important; font-size: 12px; }
+    .print-layout th, .print-layout td { border: 1px solid #000 !important; padding: 4px 8px !important; }
+    .print-layout th { background-color: #f8f9fa !important; -webkit-print-color-adjust: exact; }
     .watermark {
         position: fixed;
         top: 50%;
@@ -248,7 +179,5 @@ const printReport = () => {
         text-align: center;
         text-transform: uppercase;
     }
-
-    /* Hide standard page headers/footers if possible */
 }
 </style>
