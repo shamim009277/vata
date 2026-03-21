@@ -215,9 +215,30 @@ class DashboardController extends Controller
         // --- Charts Data ---
         
         // 1. Pie Chart: Challan vs Delivery (Season Wise)
-        $pieChallanQuery = Invoice::query();
-        $applyDateFilter($pieChallanQuery, 'invoice_date');
-        $totalChallanQuantity = $pieChallanQuery->sum('quantity');
+        $pieChallanQuery = DB::table('invoice_details')
+            ->join('invoices', 'invoice_details.invoice_id', '=', 'invoices.id')
+            ->where('invoices.season', $season);
+            
+        // Apply date filter manually for Pie Chart
+        if ($customDate) {
+            $pieChallanQuery->whereDate('invoices.invoice_date', $customDate);
+        } elseif ($customMonth) {
+            $pieChallanQuery->whereYear('invoices.invoice_date', Carbon::parse($customMonth)->year)
+                            ->whereMonth('invoices.invoice_date', Carbon::parse($customMonth)->month);
+        } else {
+            switch ($filterType) {
+                case 'today':
+                    $pieChallanQuery->whereDate('invoices.invoice_date', Carbon::today());
+                    break;
+                case 'last_7_days':
+                    $pieChallanQuery->whereBetween('invoices.invoice_date', [Carbon::today()->subDays(7), Carbon::today()]);
+                    break;
+                case 'last_15_days':
+                    $pieChallanQuery->whereBetween('invoices.invoice_date', [Carbon::today()->subDays(15), Carbon::today()]);
+                    break;
+            }
+        }
+        $totalChallanQuantity = $pieChallanQuery->sum('invoice_details.quantity');
 
         $pieDeliveryQuery = Delivery::query();
         $applyDateFilter($pieDeliveryQuery, 'delivery_date');
@@ -251,10 +272,32 @@ class DashboardController extends Controller
 
         // 3. Bar Chart: Monthly Challan vs Delivery (Season Wise)
         // We only group by month, but we still apply the overall date filter to restrict the dataset
-        $barChallanQuery = Invoice::query();
-        $applyDateFilter($barChallanQuery, 'invoice_date');
+        $barChallanQuery = DB::table('invoice_details')
+            ->join('invoices', 'invoice_details.invoice_id', '=', 'invoices.id')
+            ->where('invoices.season', $season);
+
+        // Apply date filter manually for Bar Chart
+        if ($customDate) {
+            $barChallanQuery->whereDate('invoices.invoice_date', $customDate);
+        } elseif ($customMonth) {
+            $barChallanQuery->whereYear('invoices.invoice_date', Carbon::parse($customMonth)->year)
+                            ->whereMonth('invoices.invoice_date', Carbon::parse($customMonth)->month);
+        } else {
+            switch ($filterType) {
+                case 'today':
+                    $barChallanQuery->whereDate('invoices.invoice_date', Carbon::today());
+                    break;
+                case 'last_7_days':
+                    $barChallanQuery->whereBetween('invoices.invoice_date', [Carbon::today()->subDays(7), Carbon::today()]);
+                    break;
+                case 'last_15_days':
+                    $barChallanQuery->whereBetween('invoices.invoice_date', [Carbon::today()->subDays(15), Carbon::today()]);
+                    break;
+            }
+        }
+            
         $monthlyChallan = $barChallanQuery
-            ->select(DB::raw('MONTH(invoice_date) as month'), DB::raw('SUM(quantity) as total'))
+            ->select(DB::raw('MONTH(invoices.invoice_date) as month'), DB::raw('SUM(invoice_details.quantity) as total'))
             ->groupBy('month')
             ->pluck('total', 'month')->toArray();
 

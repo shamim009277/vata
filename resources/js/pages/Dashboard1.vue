@@ -77,8 +77,18 @@ const pieChartOptions = computed(() => ({
     labels: props.charts?.pie?.labels || [],
     colors: ['#0d6efd', '#17a00e'], // Blue for Challan, Green for Delivery
     legend: { position: 'bottom' },
-    dataLabels: { enabled: true, formatter: (val) => `${val.toFixed(1)}%` },
-    tooltip: { y: { formatter: (val) => `${formatNumber(val)}` } }
+    dataLabels: { 
+        enabled: true, 
+        formatter: function (val, opts) {
+            const quantity = opts.w.globals.seriesTotals[opts.seriesIndex];
+            return `${formatNumber(quantity)} (${val.toFixed(1)}%)`;
+        }
+    },
+    tooltip: { 
+        y: { 
+            formatter: (val) => `${formatNumber(val)}` 
+        } 
+    }
 }));
 const pieChartSeries = computed(() => props.charts?.pie?.series?.map(Number) || []);
 
@@ -98,8 +108,16 @@ const radarChartSeries = computed(() => props.charts?.radar?.series || []);
 // 3. Bar Chart Options
 const barChartOptions = computed(() => ({
     chart: { type: 'bar', height: 350, stacked: false, toolbar: { show: false } },
-    plotOptions: { bar: { horizontal: false, columnWidth: '55%', endingShape: 'rounded' } },
-    dataLabels: { enabled: false },
+    plotOptions: { bar: { horizontal: false, columnWidth: '55%', endingShape: 'rounded', dataLabels: { position: 'top' } } },
+    dataLabels: { 
+        enabled: true,
+        formatter: (val) => formatNumber(val),
+        offsetY: -20,
+        style: {
+            fontSize: '10px',
+            colors: ["#304758"]
+        }
+    },
     stroke: { show: true, width: 2, colors: ['transparent'] },
     xaxis: { categories: props.charts?.bar?.labels || [] },
     yaxis: { title: { text: 'পরিমাণ' } },
