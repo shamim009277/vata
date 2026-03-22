@@ -36,9 +36,9 @@ Route::post('dashboard/session_change', [DashboardController::class, 'sessionCha
 
 
 Route::middleware(['auth'])->group(function () {
-        Route::resource('business-store', BusinessStoreController::class)->middleware('permission:business-store.index');
+    Route::resource('business-store', BusinessStoreController::class)->middleware('permission:business-store.index');
 
-        Route::put('/items/{item}/status', [ItemController::class, 'updateStatus']);
+    Route::put('/items/{item}/status', [ItemController::class, 'updateStatus']);
     Route::resource('items', ItemController::class);
 
     Route::put('/stock-lists/{stock_list}/status', [StockListController::class, 'updateStatus']);
@@ -57,13 +57,12 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/invoice/delivary', [InvoiceController::class, 'invoiceDelivary'])->name('invoice.delivary')->middleware('permission:invoices.index');
     Route::get('/invoice/all', [InvoiceController::class, 'allinvoice'])->name('invoice.all')->middleware('permission:invoice.all');
     Route::get('/invoice/advance', [InvoiceController::class, 'advanceinvoice'])->name('invoice.advance')->middleware('permission:invoice.advance');
+    Route::get('/invoice/regular', [InvoiceController::class, 'regularInvoice'])->name('invoice.regular')->middleware('permission:invoice.regular');
     Route::resource('invoices', InvoiceController::class)->middleware('permission:invoices.index');
-
 
     Route::get('/row-productions/all', [RowProductionController::class, 'allrowProduction'])->name('row-productions.all')->middleware('permission:row-productions.all');
     Route::post('/row-productions/lock', [RowProductionController::class, 'lockProduction'])->name('row-productions.lock');
     Route::resource('row-productions', RowProductionController::class)->middleware('permission:row-productions.index');
-
 
     Route::get('/delivery/invoice', [DeliveryController::class, 'invoice']);
     Route::get('/delivery/all', [DeliveryController::class, 'alldelivery'])->name('delivery.all')->middleware('permission:delivery.all');

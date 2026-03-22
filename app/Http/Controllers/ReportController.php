@@ -83,24 +83,8 @@ class ReportController extends Controller implements HasMiddleware
             'business_store' => BusinessStore::first(),
         ])->render();
 
-        $defaultConfig = (new \Mpdf\Config\ConfigVariables())->getDefaults();
-        $fontDirs = $defaultConfig['fontDir'];
-
-        $defaultFontConfig = (new \Mpdf\Config\FontVariables())->getDefaults();
-        $fontData = $defaultFontConfig['fontdata'];
-
-        $mpdf = new Mpdf([
-            'fontDir' => array_merge($fontDirs, [
-                storage_path('fonts'),
-            ]),
-            'fontdata' => $fontData + [
-                'solaimanlipi' => [
-                    'R' => 'SolaimanLipi.ttf',
-                    'useOTL' => 0xFF,
-                    'useKashida' => 75,
-                ]
-            ],
-            'default_font' => 'solaimanlipi',
+        $banglaFontPath = storage_path('fonts/SolaimanLipi.ttf');
+        $mpdfConfig = [
             'mode' => 'utf-8',
             'format' => 'A4',
             'margin_left' => 10,
@@ -108,7 +92,26 @@ class ReportController extends Controller implements HasMiddleware
             'margin_top' => 10,
             'margin_bottom' => 10,
             'tempDir' => storage_path('app/temp'), // Ensure tempDir is writable
-        ]);
+        ];
+        if (is_file($banglaFontPath)) {
+            $defaultConfig = (new \Mpdf\Config\ConfigVariables())->getDefaults();
+            $fontDirs = $defaultConfig['fontDir'];
+            $defaultFontConfig = (new \Mpdf\Config\FontVariables())->getDefaults();
+            $fontData = $defaultFontConfig['fontdata'];
+            $mpdfConfig['fontDir'] = array_merge($fontDirs, [storage_path('fonts')]);
+            $mpdfConfig['fontdata'] = $fontData + [
+                'solaimanlipi' => [
+                    'R' => 'SolaimanLipi.ttf',
+                    'useOTL' => 0xFF,
+                    'useKashida' => 75,
+                ],
+            ];
+            $mpdfConfig['default_font'] = 'solaimanlipi';
+        } else {
+            // Fallback to a safe default if custom font is unavailable/corrupted
+            $mpdfConfig['default_font'] = 'sans-serif';
+        }
+        $mpdf = new Mpdf($mpdfConfig);
 
         $mpdf->WriteHTML($html);
         return $mpdf->Output('delivery_report.pdf', 'I');
@@ -176,24 +179,8 @@ class ReportController extends Controller implements HasMiddleware
             'business_store' => BusinessStore::first(),
         ])->render();
 
-        $defaultConfig = (new \Mpdf\Config\ConfigVariables())->getDefaults();
-        $fontDirs = $defaultConfig['fontDir'];
-
-        $defaultFontConfig = (new \Mpdf\Config\FontVariables())->getDefaults();
-        $fontData = $defaultFontConfig['fontdata'];
-
-        $mpdf = new Mpdf([
-            'fontDir' => array_merge($fontDirs, [
-                storage_path('fonts'),
-            ]),
-            'fontdata' => $fontData + [
-                'solaimanlipi' => [
-                    'R' => 'SolaimanLipi.ttf',
-                    'useOTL' => 0xFF,
-                    'useKashida' => 75,
-                ]
-            ],
-            'default_font' => 'solaimanlipi',
+        $banglaFontPath = storage_path('fonts/SolaimanLipi.ttf');
+        $mpdfConfig = [
             'mode' => 'utf-8',
             'format' => 'A4',
             'margin_left' => 10,
@@ -201,7 +188,25 @@ class ReportController extends Controller implements HasMiddleware
             'margin_top' => 10,
             'margin_bottom' => 10,
             'tempDir' => storage_path('app/temp'), // Ensure tempDir is writable
-        ]);
+        ];
+        if (is_file($banglaFontPath)) {
+            $defaultConfig = (new \Mpdf\Config\ConfigVariables())->getDefaults();
+            $fontDirs = $defaultConfig['fontDir'];
+            $defaultFontConfig = (new \Mpdf\Config\FontVariables())->getDefaults();
+            $fontData = $defaultFontConfig['fontdata'];
+            $mpdfConfig['fontDir'] = array_merge($fontDirs, [storage_path('fonts')]);
+            $mpdfConfig['fontdata'] = $fontData + [
+                'solaimanlipi' => [
+                    'R' => 'SolaimanLipi.ttf',
+                    'useOTL' => 0xFF,
+                    'useKashida' => 75,
+                ],
+            ];
+            $mpdfConfig['default_font'] = 'solaimanlipi';
+        } else {
+            $mpdfConfig['default_font'] = 'sans-serif';
+        }
+        $mpdf = new Mpdf($mpdfConfig);
 
         $mpdf->WriteHTML($html);
         return $mpdf->Output('challan_report.pdf', 'I');
@@ -267,24 +272,8 @@ class ReportController extends Controller implements HasMiddleware
             'business_store' => BusinessStore::first(),
         ])->render();
 
-        $defaultConfig = (new \Mpdf\Config\ConfigVariables())->getDefaults();
-        $fontDirs = $defaultConfig['fontDir'];
-
-        $defaultFontConfig = (new \Mpdf\Config\FontVariables())->getDefaults();
-        $fontData = $defaultFontConfig['fontdata'];
-
-        $mpdf = new Mpdf([
-            'fontDir' => array_merge($fontDirs, [
-                storage_path('fonts'),
-            ]),
-            'fontdata' => $fontData + [
-                'solaimanlipi' => [
-                    'R' => 'SolaimanLipi.ttf',
-                    'useOTL' => 0xFF,
-                    'useKashida' => 75,
-                ]
-            ],
-            'default_font' => 'solaimanlipi',
+        $banglaFontPath = storage_path('fonts/SolaimanLipi.ttf');
+        $mpdfConfig = [
             'mode' => 'utf-8',
             'format' => 'A4',
             'margin_left' => 10,
@@ -292,7 +281,25 @@ class ReportController extends Controller implements HasMiddleware
             'margin_top' => 10,
             'margin_bottom' => 10,
             'tempDir' => storage_path('app/temp'),
-        ]);
+        ];
+        if (is_file($banglaFontPath)) {
+            $defaultConfig = (new \Mpdf\Config\ConfigVariables())->getDefaults();
+            $fontDirs = $defaultConfig['fontDir'];
+            $defaultFontConfig = (new \Mpdf\Config\FontVariables())->getDefaults();
+            $fontData = $defaultFontConfig['fontdata'];
+            $mpdfConfig['fontDir'] = array_merge($fontDirs, [storage_path('fonts')]);
+            $mpdfConfig['fontdata'] = $fontData + [
+                'solaimanlipi' => [
+                    'R' => 'SolaimanLipi.ttf',
+                    'useOTL' => 0xFF,
+                    'useKashida' => 75,
+                ],
+            ];
+            $mpdfConfig['default_font'] = 'solaimanlipi';
+        } else {
+            $mpdfConfig['default_font'] = 'sans-serif';
+        }
+        $mpdf = new Mpdf($mpdfConfig);
 
         $mpdf->WriteHTML($html);
         return $mpdf->Output('raw_brick_production_report.pdf', 'I');

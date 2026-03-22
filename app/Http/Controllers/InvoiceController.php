@@ -217,6 +217,68 @@ class InvoiceController extends Controller
         ]);
     }
 
+    public function regularInvoice(Request $request){
+        $items = Item::active()->get();
+        $currentYear = Carbon::now()->format('y');
+        $lastId = DB::table('invoices')->max('id');
+        $lastIddel = DB::table('deliveries')->max('id');
+        $nextId = $lastId + 1;
+        $nextIdDel = $lastIddel + 1;
+        $invoiceNumber = $currentYear . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+        $deliveryNumber = $currentYear . str_pad($nextIdDel, 4, '0', STR_PAD_LEFT);
+
+        $query = Invoice::with([
+            'customer:id,name,phone,address',
+            'creator:id,name',
+            'invoiceDetails:id,invoice_id,item_id,quantity,rate,amount,delivery_quantity',
+            'invoiceDetails.item:id,name'
+        ])->where('invoice_type', 'রেগুলার')->orderBy('id', 'desc');
+
+        $search = $request->input('search');
+        $start_date = $request->input('start_date');
+        $end_date = $request->input('end_date');
+        $season = $request->input('season', session('season'));
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('invoice_no', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($q2) use ($search) {
+                        $q2->where('name', 'like', "%{$search}%")
+                            ->orWhere('phone', 'like', "%{$search}%")
+                            ->orWhere('address', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('invoiceDetails.item', function ($q3) use ($search) {
+                        $q3->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        if ($start_date && $end_date) {
+            $start = Carbon::parse($start_date)->startOfDay();
+            $end = Carbon::parse($end_date)->endOfDay();
+            $query->whereBetween('invoice_date', [$start, $end]);
+        }
+
+        if ($season) {
+            $query->where('season', $season);
+        }
+
+        $perPage = $request->perPage ?? 10;
+
+        return Inertia::render('invoices/AllInvoice', [
+            'invoices' => $query->paginate($perPage)->withQueryString(),
+            'items' => $items,
+            'invoiceNumber' => $invoiceNumber,
+            'deliveryNumber' => $deliveryNumber,
+            'business_store' => BusinessStore::first(),
+            'filters' => [
+                'search' => $search,
+                'season' => $season,
+                'perPage' => $perPage,
+            ],
+        ]);
+    }
+
 
     /**
      * Show the form for creating a new resource.
