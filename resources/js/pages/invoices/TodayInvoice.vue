@@ -56,6 +56,7 @@ const form = useForm({
     due_amount: 0,
     delivery_rant: 0,
     items: [],
+    send_sms: false,
 
     id:0,
     delivery_qty: 0,
@@ -1198,6 +1199,10 @@ onMounted(() => {
                                 </div>
 
                                 <div class="modal-footer">
+                                    <div class="form-check me-auto">
+                                        <input class="form-check-input" type="checkbox" id="invoiceSmsSwitch" v-model="form.send_sms">
+                                        <label class="form-check-label" for="invoiceSmsSwitch">এসএমএস পাঠান</label>
+                                    </div>
                                     <button type="button" class="btn btn-secondary btn-sm" @click="showModal = false">Close</button>
                                     <button type="submit" class="btn btn-primary btn-sm">
                                         <i v-if="spinBtn" class="bx bx-loader bx-spin"></i>

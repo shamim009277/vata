@@ -483,6 +483,17 @@ class InvoiceController extends Controller
 
             DB::commit();
 
+            // 🔹 Send SMS on create/update if requested
+            if ($request->boolean('send_sms')) {
+                try {
+                    $smsService = new SmsService();
+                    $msg = "প্রিয় গ্রাহক, আপনার চালান তৈরি হয়েছে। চালান নং: {$invoice->invoice_no}, মোট: {$invoice->total_amount}, নগদ: {$invoice->paid_amount}, বাকি: {$invoice->due_amount}। ধন্যবাদ।";
+                    $smsService->send($request->phone, $msg);
+                } catch (\Exception $e) {
+                    Log::error('Invoice SMS Error: ' . $e->getMessage());
+                }
+            }
+
             $message = $isUpdate
                 ? 'চালান সফলভাবে আপডেট হয়েছে!'
                 : 'চালান সফলভাবে তৈরি হয়েছে!';

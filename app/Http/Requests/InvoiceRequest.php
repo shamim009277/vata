@@ -29,6 +29,7 @@ class InvoiceRequest extends FormRequest
             'address' => 'nullable|string|max:255',
             'type' => 'required|string|max:20',
             'delivery_date' => 'required|date',
+            'send_sms' => 'sometimes|boolean',
 
             'sub_total' => 'required|numeric|min:0',
             'total_amount' => 'required|numeric|min:0',
