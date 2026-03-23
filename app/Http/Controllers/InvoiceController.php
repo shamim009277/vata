@@ -9,6 +9,7 @@ use App\Models\Customer;
 use App\Models\Delivery;
 use App\Models\Invoice;
 use App\Models\InvoiceDetails;
+use App\Models\InvoicePayment;
 use App\Models\Item;
 use App\Services\SmsService;
 use Carbon\Carbon;
@@ -37,7 +38,7 @@ class InvoiceController extends Controller
 
         // Base query with relations
         $query = Invoice::with([
-            'customer:id,name,phone,address',
+            'customer:id,name,phone,address,due_amount',
             'creator:id,name',
             'invoiceDetails:id,invoice_id,item_id,quantity,rate,amount,delivery_quantity',
             'invoiceDetails.item:id,name'
@@ -106,7 +107,7 @@ class InvoiceController extends Controller
 
         //Base query with relations
         $query = Invoice::with([
-            'customer:id,name,phone,address',
+            'customer:id,name,phone,address,due_amount',
             'creator:id,name',
             'invoiceDetails:id,invoice_id,item_id,quantity,rate,amount,delivery_quantity',
             'invoiceDetails.item:id,name'
@@ -169,7 +170,7 @@ class InvoiceController extends Controller
 
         //Base query with relations
         $query = Invoice::with([
-            'customer:id,name,phone,address',
+            'customer:id,name,phone,address,due_amount',
             'creator:id,name',
             'invoiceDetails:id,invoice_id,item_id,quantity,rate,amount,delivery_quantity',
             'invoiceDetails.item:id,name'
@@ -228,7 +229,7 @@ class InvoiceController extends Controller
         $deliveryNumber = $currentYear . str_pad($nextIdDel, 4, '0', STR_PAD_LEFT);
 
         $query = Invoice::with([
-            'customer:id,name,phone,address',
+            'customer:id,name,phone,address,due_amount',
             'creator:id,name',
             'invoiceDetails:id,invoice_id,item_id,quantity,rate,amount,delivery_quantity',
             'invoiceDetails.item:id,name'
@@ -481,6 +482,24 @@ class InvoiceController extends Controller
                 ]);
             }
 
+            // 🔹 Upsert payment record for this invoice
+            InvoicePayment::updateOrCreate(
+                ['invoice_id' => $invoice->id],
+                [
+                    'customer_id'  => $customer->id,
+                    'payment_date' => $request->payment_date,
+                    'total_amount' => $request->total_amount,
+                    'paid_amount'  => $request->paid_amount,
+                    'due_amount'   => $request->due_amount,
+                    'method'       => $request->payment_method ?: 'cash',
+                    'account_number' => $request->payment_method === 'mobile_banking' ? ($request->account_number ?? null) : null,
+                    'check_number'   => $request->payment_method === 'check' ? ($request->check_number ?? null) : null,
+                    'note'         => $request->note ?? null,
+                    'created_by'   => Auth::id(),
+                    'updated_by'   => Auth::id(),
+                ]
+            );
+
             DB::commit();
 
             // 🔹 Send SMS on create/update if requested
@@ -555,6 +574,92 @@ class InvoiceController extends Controller
         }
     }
 
+    // --- Due Khata Sections ---
+    public function todayDeposit(Request $request)
+    {
+        $items = Item::active()->get();
+        $currentYear = Carbon::now()->format('y');
+        $lastId = DB::table('invoices')->max('id');
+        $lastIddel = DB::table('deliveries')->max('id');
+        $invoiceNumber = $currentYear . str_pad($lastId + 1, 4, '0', STR_PAD_LEFT);
+        $deliveryNumber = $currentYear . str_pad($lastIddel + 1, 4, '0', STR_PAD_LEFT);
+
+        $query = Invoice::with([
+            'customer:id,name,phone,address,due_amount',
+            'creator:id,name',
+            'invoiceDetails:id,invoice_id,item_id,quantity,rate,amount,delivery_quantity',
+            'invoiceDetails.item:id,name'
+        ])
+        ->where('due_amount', '>', 0)
+        ->whereDate('next_payment_date', Carbon::now()->format('Y-m-d'))
+        ->orderBy('id', 'desc');
+
+        $perPage = $request->perPage ?? 10;
+        return Inertia::render('invoices/AllInvoice', [
+            'invoices' => $query->paginate($perPage)->withQueryString(),
+            'items' => $items,
+            'invoiceNumber' => $invoiceNumber,
+            'deliveryNumber' => $deliveryNumber,
+            'business_store' => BusinessStore::first(),
+            'filters' => [
+                'perPage' => $perPage,
+            ],
+        ]);
+    }
+
+    public function willDepositToday(Request $request)
+    {
+        // Using same filter for scheduled deposits today
+        return $this->todayDeposit($request);
+    }
+
+    public function allDue(Request $request)
+    {
+        $items = Item::active()->get();
+        $currentYear = Carbon::now()->format('y');
+        $lastId = DB::table('invoices')->max('id');
+        $lastIddel = DB::table('deliveries')->max('id');
+        $invoiceNumber = $currentYear . str_pad($lastId + 1, 4, '0', STR_PAD_LEFT);
+        $deliveryNumber = $currentYear . str_pad($lastIddel + 1, 4, '0', STR_PAD_LEFT);
+
+        $query = Invoice::with([
+            'customer:id,name,phone,address,due_amount',
+            'creator:id,name',
+            'invoiceDetails:id,invoice_id,item_id,quantity,rate,amount,delivery_quantity',
+            'invoiceDetails.item:id,name'
+        ])
+        ->where('due_amount', '>', 0)
+        ->orderBy('id', 'desc');
+
+        // Optional filters
+        $search = $request->input('search');
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('invoice_no', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($q2) use ($search) {
+                        $q2->where('name', 'like', "%{$search}%")
+                            ->orWhere('phone', 'like', "%{$search}%")
+                            ->orWhere('address', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('invoiceDetails.item', function ($q3) use ($search) {
+                        $q3->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $perPage = $request->perPage ?? 10;
+        return Inertia::render('invoices/AllInvoice', [
+            'invoices' => $query->paginate($perPage)->withQueryString(),
+            'items' => $items,
+            'invoiceNumber' => $invoiceNumber,
+            'deliveryNumber' => $deliveryNumber,
+            'business_store' => BusinessStore::first(),
+            'filters' => [
+                'search' => $search,
+                'perPage' => $perPage,
+            ],
+        ]);
+    }
     public function invoiceDelivary(DeliveryRequest $request){
         DB::beginTransaction();
 
@@ -626,5 +731,55 @@ class InvoiceController extends Controller
             return redirect()->back()->with('error', 'চালান সংরক্ষণে একটি ত্রুটি ঘটেছে!');
         }
 
+    }
+
+    public function invoicePayments(Invoice $invoice)
+    {
+        $invoice->load(['customer', 'payments']);
+        return Inertia::render('invoices/InvoicePayments', [
+            'invoice' => $invoice,
+            'payments' => $invoice->payments,
+            'business_store' => BusinessStore::first(),
+        ]);
+    }
+
+    public function invoicePaymentsJson(Invoice $invoice)
+    {
+        $invoice->load('payments');
+        return response()->json($invoice->payments);
+    }
+
+    public function updatePayment(Request $request, InvoicePayment $payment)
+    {
+        $validated = $request->validate([
+            'payment_date' => 'nullable|date',
+            'total_amount' => 'nullable|numeric|min:0',
+            'paid_amount'  => 'nullable|numeric|min:0',
+            'due_amount'   => 'nullable|numeric|min:0',
+            'payment_method' => 'nullable|string|in:cash,mobile_banking,check',
+            'account_number' => 'nullable|required_if:payment_method,mobile_banking|string|max:50',
+            'check_number'   => 'nullable|required_if:payment_method,check|string|max:50',
+            'note'           => 'nullable|string|max:255',
+        ]);
+
+        $payment->update([
+            'payment_date' => $validated['payment_date'] ?? $payment->payment_date,
+            'total_amount' => $validated['total_amount'] ?? $payment->total_amount,
+            'paid_amount'  => $validated['paid_amount'] ?? $payment->paid_amount,
+            'due_amount'   => $validated['due_amount'] ?? ($validated['total_amount'] ?? $payment->total_amount) - ($validated['paid_amount'] ?? $payment->paid_amount),
+            'method'       => $validated['payment_method'] ?? $payment->method,
+            'account_number' => ($validated['payment_method'] ?? $payment->method) === 'mobile_banking' ? ($validated['account_number'] ?? null) : null,
+            'check_number'   => ($validated['payment_method'] ?? $payment->method) === 'check' ? ($validated['check_number'] ?? null) : null,
+            'note'         => $validated['note'] ?? $payment->note,
+            'updated_by'   => Auth::id(),
+        ]);
+
+        return response()->json(['success' => true]);
+    }
+
+    public function deletePayment(InvoicePayment $payment)
+    {
+        $payment->delete();
+        return response()->json(['success' => true]);
     }
 }

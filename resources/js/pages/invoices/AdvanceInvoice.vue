@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import InputError from '@/components/InputError.vue';
 import { toast } from 'vue3-toastify';
 import Swal from 'sweetalert2';
+import axios from 'axios';
 
 const props = defineProps({
     invoices: Object,
@@ -56,6 +57,9 @@ const form = useForm({
     due_amount: 0,
     delivery_rant: 0,
     items: [],
+    payment_method: 'cash',
+    account_number: '',
+    check_number: '',
 
     id:0,
     delivery_qty: 0,
@@ -586,6 +590,20 @@ const showUpdateDetails = (invoice) => {
     form.total_amount = invoice.total_amount;
     form.paid_amount = invoice.paid_amount;
     form.due_amount = invoice.due_amount;
+
+    // Prefill payment method from latest payment if available
+    axios.get(route('invoices.payments.json', invoice.id)).then(({ data }) => {
+        if (Array.isArray(data) && data.length > 0) {
+            const latest = data[data.length - 1];
+            form.payment_method = latest.method || 'cash';
+            form.account_number = latest.account_number || '';
+            form.check_number = latest.check_number || '';
+        } else {
+            form.payment_method = 'cash';
+            form.account_number = '';
+            form.check_number = '';
+        }
+    });
 };
 
 const removeRow = (index) => {
@@ -1108,6 +1126,24 @@ onMounted(() => {
                                                 <label class="form-label">বাকি <span class="text-danger">*</span></label>
                                                 <Input v-model="form.due_amount" class="form-control form-control-sm" placeholder="বাকি" readonly/>
                                                 <InputError :message="form.errors.due_amount" />
+                                            </div>
+                                            <div class="col-sm-6 mb-2 pe-sm-0">
+                                                <label class="form-label">পেমেন্ট মেথড</label>
+                                                <select v-model="form.payment_method" class="form-control form-control-sm">
+                                                    <option value="cash">ক্যাশ</option>
+                                                    <option value="mobile_banking">মোবাইল ব্যাংকিং</option>
+                                                    <option value="check">চেক</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-sm-6 mb-2" v-if="form.payment_method === 'mobile_banking'">
+                                                <label class="form-label">একাউন্ট নম্বর</label>
+                                                <Input v-model="form.account_number" class="form-control form-control-sm" placeholder="একাউন্ট নম্বর" />
+                                                <InputError :message="form.errors.account_number" />
+                                            </div>
+                                            <div class="col-sm-6 mb-2" v-if="form.payment_method === 'check'">
+                                                <label class="form-label">চেক নম্বর</label>
+                                                <Input v-model="form.check_number" class="form-control form-control-sm" placeholder="চেক নম্বর" />
+                                                <InputError :message="form.errors.check_number" />
                                             </div>
                                         </div>
                                     </div>

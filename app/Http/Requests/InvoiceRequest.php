@@ -30,6 +30,9 @@ class InvoiceRequest extends FormRequest
             'type' => 'required|string|max:20',
             'delivery_date' => 'required|date',
             'send_sms' => 'sometimes|boolean',
+            'payment_method' => 'nullable|string|in:cash,mobile_banking,check',
+            'account_number' => 'nullable|required_if:payment_method,mobile_banking|string|max:50',
+            'check_number' => 'nullable|required_if:payment_method,check|string|max:50',
 
             'sub_total' => 'required|numeric|min:0',
             'total_amount' => 'required|numeric|min:0',

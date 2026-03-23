@@ -2,11 +2,11 @@
 import AppLayout1 from '@/layouts/AppLayout1.vue';
 import { Head, useForm,router,Link } from '@inertiajs/vue3';
 import { ref, watch, onMounted } from 'vue';
+import axios from 'axios';
 import { Input } from '@/components/ui/input';
 import InputError from '@/components/InputError.vue';
 import { toast } from 'vue3-toastify';
 import Swal from 'sweetalert2';
-import axios from 'axios';
 
 const props = defineProps({
     invoices: Object,
@@ -57,6 +57,9 @@ const form = useForm({
     delivery_rant: 0,
     items: [],
     send_sms: false,
+    payment_method: 'cash',
+    account_number: '',
+    check_number: '',
 
     id:0,
     delivery_qty: 0,
@@ -289,6 +292,20 @@ const showUpdateDetails = (invoice) => {
     form.total_amount = invoice.total_amount;
     form.paid_amount = invoice.paid_amount;
     form.due_amount = invoice.due_amount;
+
+    // Prefill payment method from latest payment if available
+    axios.get(route('invoices.payments.json', invoice.id)).then(({ data }) => {
+        if (Array.isArray(data) && data.length > 0) {
+            const latest = data[data.length - 1];
+            form.payment_method = latest.method || 'cash';
+            form.account_number = latest.account_number || '';
+            form.check_number = latest.check_number || '';
+        } else {
+            form.payment_method = 'cash';
+            form.account_number = '';
+            form.check_number = '';
+        }
+    });
 };
 
 const removeRow = (index) => {
@@ -774,6 +791,214 @@ onMounted(() => {
         loading.value = false;
     }, 500);
 });
+
+// Payments modal state & actions
+const showPaymentsModal = ref(false);
+const payments = ref([]);
+const editingPayment = ref(null);
+const paymentForm = ref({
+    id: null,
+    payment_date: '',
+    payment_method: 'cash',
+    total_amount: 0,
+    paid_amount: 0,
+    due_amount: 0,
+    account_number: '',
+    check_number: '',
+    note: '',
+});
+
+const openPaymentsModal = (invoice) => {
+    selectedInvoice.value = invoice;
+    axios.get(route('invoices.payments.json', invoice.id)).then(({ data }) => {
+        payments.value = data || [];
+        showPaymentsModal.value = true;
+    });
+};
+
+const startEditPayment = (p) => {
+    editingPayment.value = p;
+    paymentForm.value = {
+        id: p.id,
+        payment_date: p.payment_date,
+        payment_method: p.method || 'cash',
+        total_amount: p.total_amount,
+        paid_amount: p.paid_amount,
+        due_amount: p.due_amount,
+        account_number: p.account_number || '',
+        check_number: p.check_number || '',
+        note: p.note || '',
+    };
+};
+
+const submitPaymentUpdate = () => {
+    if (!editingPayment.value) return;
+    axios.put(route('invoices.payments.update', editingPayment.value.id), paymentForm.value).then(() => {
+        return axios.get(route('invoices.payments.json', selectedInvoice.value.id));
+    }).then(({ data }) => {
+        payments.value = data || [];
+        editingPayment.value = null;
+    });
+};
+
+const deletePayment = (p) => {
+    axios.delete(route('invoices.payments.delete', p.id)).then(() => {
+        payments.value = payments.value.filter(x => x.id !== p.id);
+    });
+};
+
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return dateString;
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+};
+
+const printPaymentReceipt = (p) => {
+  const win = window.open('', '_blank');
+  if (!win) return;
+  const makeCopy = (label) => `
+    <div class="receipt">
+      <div class="topbar">
+        <span class="badge">${label}</span>
+        <span class="title">পেমেন্ট রসিদ</span>
+      </div>
+      <div class="brand">${props.business_store?.store_name || ''}</div>
+      <div class="sub">${props.business_store?.address || ''}</div>
+      <div class="contact">মোবাইল: ${props.business_store?.phone || ''}</div>
+      <div class="meta">
+        <div><b>চালান নং:</b> ${selectedInvoice.value?.invoice_no || ''}</div>
+        <div><b>তারিখ:</b> ${formatDate(p.payment_date)}</div>
+        <div><b>সময়:</b> ${new Date().toLocaleTimeString()}</div>
+        <div><b>তৈরি:</b> ${selectedInvoice.value?.creator?.name || ''}</div>
+      </div>
+      <div class="section">
+        <div class="section-title">কাস্টমার</div>
+        <div class="section-body grid-2">
+          <div><b>নাম:</b> ${selectedInvoice.value?.customer?.name || ''}</div>
+          <div><b>ফোন:</b> ${selectedInvoice.value?.customer?.phone || ''}</div>
+          <div class="full"><b>ঠিকানা:</b> ${selectedInvoice.value?.customer?.address || ''}</div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="box">
+          <div class="box-title">পেমেন্ট তথ্য</div>
+          <div class="box-body">
+            <div><b>মেথড:</b> ${p.method || '-'}</div>
+            <div><b>একাউন্ট/চেক:</b> ${p.method === 'mobile_banking' ? (p.account_number || '-') : (p.method === 'check' ? (p.check_number || '-') : '-')}</div>
+          </div>
+        </div>
+        <div class="box danger">
+          <div class="box-title">বাকি</div>
+          <div class="box-value">${Number(p.due_amount).toFixed(2)}</div>
+          <div class="box-helper">পরিশোধের তারিখ: ${formatDate(selectedInvoice.value?.next_payment_date)}</div>
+        </div>
+      </div>
+      <div class="summary">
+        <div><span>মোট মূল্য</span><span class="num">${Number(p.total_amount).toFixed(2)}</span></div>
+        <div><span>জমা</span><span class="num">${Number(p.paid_amount).toFixed(2)}</span></div>
+        <div><span>বাকি</span><span class="num">${Number(p.due_amount).toFixed(2)}</span></div>
+      </div>
+      <div class="signs">
+        <div>গ্রাহকের স্বাক্ষর</div>
+        <div>কর্তৃপক্ষের স্বাক্ষর</div>
+      </div>
+    </div>
+  `;
+  const html = `
+    <html>
+    <head>
+      <title>Payment Receipt</title>
+      <style>
+        body { font-family: Arial, sans-serif; font-size: 12px; margin: 12px; color: #111; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .receipt { border: 1px solid #d0d7de; padding: 12px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+        .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+        .badge { background: #0d6efd; color: #fff; padding: 2px 8px; border-radius: 999px; font-size: 10px; }
+        .title { font-weight: 700; font-size: 12px; color: #0d6efd; }
+        .brand { font-size: 20px; font-weight: 800; text-align: center; }
+        .sub, .contact { text-align: center; color: #555; }
+        .contact { margin-bottom: 14px; }
+        .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; margin-bottom: 8px; }
+        .section { border: 1px solid #e6e6e6; border-radius: 8px; margin-bottom: 8px; }
+        .section-title { background: #f8f9fa; padding: 6px 8px; font-weight: 700; border-bottom: 1px solid #e6e6e6; }
+        .section-body { padding: 8px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
+        .full { grid-column: 1 / -1; }
+        .box { border: 1px solid #e6e6e6; border-radius: 8px; padding: 8px; }
+        .box.danger { border-color: #e74c3c; color: #e74c3c; }
+        .box-title { font-weight: 700; margin-bottom: 4px; }
+        .box-value { font-size: 16px; font-weight: 800; }
+        .box-helper { font-size: 11px; }
+        .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; margin-top: 8px; }
+        .summary .num { text-align: right; }
+        .signs { display: grid; grid-template-columns: 1fr 1fr; margin-top: 12px; color: #555; }
+      </style>
+    </head>
+    <body>
+      <div class="grid">
+        ${makeCopy('কাস্টমার কপি')}
+        ${makeCopy('অফিস কপি')}
+      </div>
+    </body>
+    </html>`;
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+  setTimeout(() => win.print(), 300);
+};
+
+const printThermalPaymentReceipt = (p) => {
+  const win = window.open('', '_blank');
+  if (!win) return;
+  const html = `
+    <html>
+    <head>
+      <title>Thermal Payment Receipt</title>
+      <style>
+        @media print { @page { size: 80mm auto; margin: 2mm; } }
+        body { font-family: monospace; font-size: 11px; margin: 0; }
+        .pos { width: 76mm; margin: 0 auto; padding: 2mm; }
+        .center { text-align: center; }
+        .line { border-top: 1px dashed #000; margin: 4px 0; }
+        .row { display: flex; justify-content: space-between; }
+        .bold { font-weight: 700; }
+        .mt { margin-top: 4px; }
+        .mb { margin-bottom: 4px; }
+      </style>
+    </head>
+    <body>
+      <div class="pos">
+        <div class="center bold">${props.business_store?.store_name || ''}</div>
+        <div class="center">${props.business_store?.address || ''}</div>
+        <div class="center mb">Mob: ${props.business_store?.phone || ''}</div>
+        <div class="line"></div>
+        <div class="row"><span>Inv:</span><span>${selectedInvoice.value?.invoice_no || ''}</span></div>
+        <div class="row"><span>Date:</span><span>${formatDate(p.payment_date)}</span></div>
+        <div class="row"><span>Time:</span><span>${new Date().toLocaleTimeString()}</span></div>
+        <div class="row"><span>User:</span><span>${selectedInvoice.value?.creator?.name || ''}</span></div>
+        <div class="line"></div>
+        <div class="row"><span>Cus:</span><span>${selectedInvoice.value?.customer?.name || ''}</span></div>
+        <div class="row"><span>Ph :</span><span>${selectedInvoice.value?.customer?.phone || ''}</span></div>
+        <div class="line"></div>
+        <div class="row"><span>Method:</span><span>${p.method || '-'}</span></div>
+        <div class="row"><span>Acct/Chk:</span><span>${p.method === 'mobile_banking' ? (p.account_number || '-') : (p.method === 'check' ? (p.check_number || '-') : '-')}</span></div>
+        <div class="line"></div>
+        <div class="row bold"><span>Total:</span><span>${Number(p.total_amount).toFixed(2)}</span></div>
+        <div class="row"><span>Paid :</span><span>${Number(p.paid_amount).toFixed(2)}</span></div>
+        <div class="row"><span>Due  :</span><span>${Number(p.due_amount).toFixed(2)}</span></div>
+        <div class="mt center">Thank You</div>
+      </div>
+    </body>
+    </html>`;
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+  setTimeout(() => win.print(), 300);
+};
 </script>
 
 <template>
@@ -897,6 +1122,12 @@ onMounted(() => {
                                                                 🚚 ডেলিভারি দিন
                                                             </a>
                                                         </li>
+                                                        <li>
+                                                            <a class="dropdown-item" href="#" @click="openPaymentsModal(invoice)">
+                                                                <i class="bx bx-credit-card"></i>
+                                                                ভিউ পেমেন্ট
+                                                            </a>
+                                                        </li>
                                                         <li><a class="dropdown-item" href="#" @click.prevent="confirmDelete(invoice.id)">
                                                             <i class="bx bx-trash"></i>
                                                             চালান মুছে ফেলুন
@@ -958,6 +1189,133 @@ onMounted(() => {
                 <div class="modal-backdrop" v-if="showModal"></div>
             </transition>
 
+            <!-- Payments Modal -->
+            <transition name="modal">
+                <div class="modal-backdrop" v-if="showPaymentsModal"></div>
+            </transition>
+            <transition name="slide-fade">
+                <div class="modal d-block" v-if="showPaymentsModal">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header" style="border-top: 2px solid #004882;">
+                                <h6 class="modal-title">
+                                    <i class="bx bx-credit-card me-2"></i>
+                                    পেমেন্ট বিস্তারিত (চালান: {{ selectedInvoice?.invoice_no }})
+                                </h6>
+                                <button type="button" class="btn-close" @click="showPaymentsModal = false"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>তারিখ</th>
+                                                <th class="text-end">মোট</th>
+                                                <th class="text-end">নগদ</th>
+                                                <th class="text-end">বাকি</th>
+                                                <th>মেথড</th>
+                                                <th>একাউন্ট/চেক</th>
+                                                <th>নোট</th>
+                                                <th>অ্যাকশন</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="p in payments" :key="p.id">
+                                                <td>{{ formatDate(p.payment_date) }}</td>
+                                                <td class="text-end">{{ Number(p.total_amount).toFixed(2) }}</td>
+                                                <td class="text-end">{{ Number(p.paid_amount).toFixed(2) }}</td>
+                                                <td class="text-end">{{ Number(p.due_amount).toFixed(2) }}</td>
+                                                <td>{{ p.method || '-' }}</td>
+                                                <td>
+                                                    <span v-if="p.method === 'mobile_banking'">{{ p.account_number || '-' }}</span>
+                                                    <span v-else-if="p.method === 'check'">{{ p.check_number || '-' }}</span>
+                                                    <span v-else>-</span>
+                                                </td>
+                                                <td>{{ p.note || '-' }}</td>
+                                                <td>
+                                                    <div class="dropdown dropstart">
+                                                        <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                            <i class="bx bx-dots-vertical-rounded"></i>
+                                                        </button>
+                                                        <ul class="dropdown-menu">
+                                                            <li>
+                                                                <a class="dropdown-item" href="#" @click="printPaymentReceipt(p)">
+                                                                    <i class="bx bx-printer"></i> 
+                                                                    পেমেন্ট রসিদ
+                                                                </a>
+                                                            </li>
+                                                            <li>
+                                                                <a class="dropdown-item" href="#" @click="printThermalPaymentReceipt(p)">
+                                                                    <i class="bx bx-printer"></i> 
+                                                                    থার্মাল পেমেন্ট রসিদ
+                                                                </a>
+                                                            </li>
+                                                            <li><a class="dropdown-item" href="#" @click="startEditPayment(p)"><i class="bx bx-edit"></i> আপডেট</a></li>
+                                                            <li><a class="dropdown-item" href="#" @click="deletePayment(p)"><i class="bx bx-trash"></i> ডিলিট</a></li>
+                                                        </ul>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr v-if="payments.length === 0">
+                                                <td colspan="8" class="text-center">কোনো পেমেন্ট পাওয়া যায়নি</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Edit Payment Form -->
+                                <div v-if="editingPayment" class="mt-3 p-3 border rounded">
+                                    <h6 class="mb-2">পেমেন্ট আপডেট</h6>
+                                    <div class="row g-2">
+                                        <div class="col-sm-6">
+                                            <label class="form-label">তারিখ</label>
+                                            <Input type="date" v-model="paymentForm.payment_date" class="form-control form-control-sm" />
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <label class="form-label">মেথড</label>
+                                            <select v-model="paymentForm.payment_method" class="form-control form-control-sm">
+                                                <option value="cash">ক্যাশ</option>
+                                                <option value="mobile_banking">মোবাইল ব্যাংকিং</option>
+                                                <option value="check">চেক</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <label class="form-label">মোট</label>
+                                            <Input type="number" v-model="paymentForm.total_amount" class="form-control form-control-sm" />
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <label class="form-label">নগদ</label>
+                                            <Input type="number" v-model="paymentForm.paid_amount" class="form-control form-control-sm" />
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <label class="form-label">বাকি</label>
+                                            <Input type="number" v-model="paymentForm.due_amount" class="form-control form-control-sm" />
+                                        </div>
+                                        <div class="col-sm-6" v-if="paymentForm.payment_method === 'mobile_banking'">
+                                            <label class="form-label">একাউন্ট নম্বর</label>
+                                            <Input v-model="paymentForm.account_number" class="form-control form-control-sm" />
+                                        </div>
+                                        <div class="col-sm-6" v-if="paymentForm.payment_method === 'check'">
+                                            <label class="form-label">চেক নম্বর</label>
+                                            <Input v-model="paymentForm.check_number" class="form-control form-control-sm" />
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label">নোট</label>
+                                            <Input v-model="paymentForm.note" class="form-control form-control-sm" />
+                                        </div>
+                                        <div class="col-12 d-flex justify-content-end">
+                                            <button class="btn btn-primary btn-sm" @click="submitPaymentUpdate">সেভ</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn btn-secondary btn-sm" @click="showPaymentsModal = false">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </transition>
             <transition name="slide-fade">
                 <div class="modal d-block" v-if="showModal">
                     <div class="modal-dialog modal-lg">
@@ -1194,6 +1552,24 @@ onMounted(() => {
                                                 <Input v-model="form.due_amount" class="form-control form-control-sm" placeholder="বাকি" readonly/>
                                                 <InputError :message="form.errors.due_amount" />
                                             </div>
+                                            <div class="col-sm-6 mb-2 pe-sm-0">
+                                                <label class="form-label">পেমেন্ট মেথড</label>
+                                                <select v-model="form.payment_method" class="form-control form-control-sm">
+                                                    <option value="cash">ক্যাশ</option>
+                                                    <option value="mobile_banking">মোবাইল ব্যাংকিং</option>
+                                                    <option value="check">চেক</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-sm-6 mb-2" v-if="form.payment_method === 'mobile_banking'">
+                                                <label class="form-label">একাউন্ট নম্বর</label>
+                                                <Input v-model="form.account_number" class="form-control form-control-sm" placeholder="একাউন্ট নম্বর" />
+                                                <InputError :message="form.errors.account_number" />
+                                            </div>
+                                            <div class="col-sm-6 mb-2" v-if="form.payment_method === 'check'">
+                                                <label class="form-label">চেক নম্বর</label>
+                                                <Input v-model="form.check_number" class="form-control form-control-sm" placeholder="চেক নম্বর" />
+                                                <InputError :message="form.errors.check_number" />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1240,8 +1616,9 @@ onMounted(() => {
                                         <p><strong>চালান তৈরি করেছেন:</strong> {{ selectedInvoice.creator.name }}</p>
                                     </div>
                                     <div class="col-md-6 company-info">
-                                        <h4 class="font-bold text-primary">এম.এম.বি ব্রিকস</h4>
-                                        <p>হিলালিপাড়া,কাটাবাড়ি,গোবিন্দগঞ্জ</p>
+                                        <h4 class="font-bold text-primary">{{ props.business_store?.store_name || 'N/A' }}</h4>
+                                        <p>{{ props.business_store?.address || '-' }}</p>
+                                        <p>Mobile: {{ props.business_store?.phone || '-' }}</p>
                                     </div>
                                 </div>
 
@@ -1362,6 +1739,144 @@ onMounted(() => {
             <!-- Delivery Modal -->
             <transition name="modal">
                 <div class="modal-backdrop" v-if="showDeliveryModal"></div>
+            </transition>
+
+            <!-- Payments Modal -->
+            <transition name="modal">
+                <div class="modal-backdrop" v-if="showPaymentsModal"></div>
+            </transition>
+            <transition name="slide-fade">
+                <div class="modal d-block" v-if="showPaymentsModal">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header" style="border-top: 2px solid #004882;">
+                                <h6 class="modal-title">
+                                    <i class="bx bx-credit-card me-2"></i>
+                                    পেমেন্ট বিস্তারিত (চালান: {{ selectedInvoice?.invoice_no }})
+                                </h6>
+                                <button type="button" class="btn-close" @click="showPaymentsModal = false"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>তারিখ</th>
+                                                <th class="text-end">মোট</th>
+                                                <th class="text-end">নগদ</th>
+                                                <th class="text-end">বাকি</th>
+                                                <th>মেথড</th>
+                                                <th>একাউন্ট/চেক</th>
+                                                <th>নোট</th>
+                                                <th>অ্যাকশন</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="p in payments" :key="p.id">
+                                                <td>{{ formatDate(p.payment_date) }}</td>
+                                                <td class="text-end">{{ Number(p.total_amount).toFixed(2) }}</td>
+                                                <td class="text-end">{{ Number(p.paid_amount).toFixed(2) }}</td>
+                                                <td class="text-end">{{ Number(p.due_amount).toFixed(2) }}</td>
+                                                <td>{{ p.method || '-' }}</td>
+                                                <td>
+                                                    <span v-if="p.method === 'mobile_banking'">{{ p.account_number || '-' }}</span>
+                                                    <span v-else-if="p.method === 'check'">{{ p.check_number || '-' }}</span>
+                                                    <span v-else>-</span>
+                                                </td>
+                                                <td>{{ p.note || '-' }}</td>
+                                                <td>
+                                                    <div class="dropdown dropstart">
+                                                        <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                            <i class="bx bx-dots-vertical-rounded"></i>
+                                                        </button>
+                                                        <ul class="dropdown-menu">
+                                                            <li>
+                                                                <a class="dropdown-item" href="#" @click="printPaymentReceipt(p)">
+                                                                    <i class="bx bx-printer"></i> 
+                                                                    পেমেন্ট রসিদ
+                                                                </a>
+                                                            </li>
+                                                            <li>
+                                                                <a class="dropdown-item" href="#" @click="printThermalPaymentReceipt(p)">
+                                                                    <i class="bx bx-printer"></i> 
+                                                                    থার্মাল পেমেন্ট রসিদ
+                                                                </a>
+                                                            </li>
+                                                            <li>
+                                                                <a class="dropdown-item" href="#" @click="startEditPayment(p)">
+                                                                    <i class="bx bx-edit"></i> 
+                                                                    আপডেট
+                                                                </a>
+                                                            </li>
+                                                            <li>
+                                                                <a class="dropdown-item" href="#" @click="deletePayment(p)">
+                                                                    <i class="bx bx-trash"></i> 
+                                                                    ডিলিট
+                                                                </a>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr v-if="payments.length === 0">
+                                                <td colspan="8" class="text-center">কোনো পেমেন্ট পাওয়া যায়নি</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Edit Payment Form -->
+                                <div v-if="editingPayment" class="mt-3 p-3 border rounded">
+                                    <h6 class="mb-2">পেমেন্ট আপডেট</h6>
+                                    <div class="row g-2">
+                                        <div class="col-sm-6">
+                                            <label class="form-label">তারিখ</label>
+                                            <Input type="date" v-model="paymentForm.payment_date" class="form-control form-control-sm" />
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <label class="form-label">মেথড</label>
+                                            <select v-model="paymentForm.payment_method" class="form-control form-control-sm">
+                                                <option value="cash">ক্যাশ</option>
+                                                <option value="mobile_banking">মোবাইল ব্যাংকিং</option>
+                                                <option value="check">চেক</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <label class="form-label">মোট</label>
+                                            <Input type="number" v-model="paymentForm.total_amount" class="form-control form-control-sm" />
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <label class="form-label">নগদ</label>
+                                            <Input type="number" v-model="paymentForm.paid_amount" class="form-control form-control-sm" />
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <label class="form-label">বাকি</label>
+                                            <Input type="number" v-model="paymentForm.due_amount" class="form-control form-control-sm" />
+                                        </div>
+                                        <div class="col-sm-6" v-if="paymentForm.payment_method === 'mobile_banking'">
+                                            <label class="form-label">একাউন্ট নম্বর</label>
+                                            <Input v-model="paymentForm.account_number" class="form-control form-control-sm" />
+                                        </div>
+                                        <div class="col-sm-6" v-if="paymentForm.payment_method === 'check'">
+                                            <label class="form-label">চেক নম্বর</label>
+                                            <Input v-model="paymentForm.check_number" class="form-control form-control-sm" />
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label">নোট</label>
+                                            <Input v-model="paymentForm.note" class="form-control form-control-sm" />
+                                        </div>
+                                        <div class="col-12 d-flex justify-content-end">
+                                            <button class="btn btn-primary btn-sm" @click="submitPaymentUpdate">সেভ</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn btn-secondary btn-sm" @click="showPaymentsModal = false">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </transition>
 
             <transition name="slide-fade">

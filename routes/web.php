@@ -59,7 +59,15 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/invoice/advance', [InvoiceController::class, 'advanceinvoice'])->name('invoice.advance')->middleware('permission:invoice.advance');
     Route::get('/invoice/regular', [InvoiceController::class, 'regularInvoice'])->name('invoice.regular')->middleware('permission:invoice.regular');
     Route::resource('invoices', InvoiceController::class)->middleware('permission:invoices.index');
+    Route::get('/invoices/{invoice}/payments', [InvoiceController::class, 'invoicePayments'])->name('invoices.payments.show')->middleware('permission:invoices.index');
+    Route::get('/invoices/{invoice}/payments/json', [InvoiceController::class, 'invoicePaymentsJson'])->name('invoices.payments.json')->middleware('permission:invoices.index');
+    Route::put('/invoices/payments/{payment}', [InvoiceController::class, 'updatePayment'])->name('invoices.payments.update')->middleware('permission:invoices.index');
+    Route::delete('/invoices/payments/{payment}', [InvoiceController::class, 'deletePayment'])->name('invoices.payments.delete')->middleware('permission:invoices.index');
 
+    // Due Khata
+    Route::get('/due/today-deposit', [InvoiceController::class, 'todayDeposit'])->name('due.today_deposit')->middleware('permission:due.today_deposit');
+    Route::get('/due/will-deposit-today', [InvoiceController::class, 'willDepositToday'])->name('due.will_deposit_today')->middleware('permission:due.will_deposit_today');
+    Route::get('/due/all', [InvoiceController::class, 'allDue'])->name('due.all')->middleware('permission:due.all');
     Route::get('/row-productions/all', [RowProductionController::class, 'allrowProduction'])->name('row-productions.all')->middleware('permission:row-productions.all');
     Route::post('/row-productions/lock', [RowProductionController::class, 'lockProduction'])->name('row-productions.lock');
     Route::resource('row-productions', RowProductionController::class)->middleware('permission:row-productions.index');
