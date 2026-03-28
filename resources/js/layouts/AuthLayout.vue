@@ -7,12 +7,12 @@
                 <div class="container-fluid">
                     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-3">
                         <div class="col mx-auto">
-                            <div class="mb-4 text-center">
-                                <img :src="AppLogo" width="100" alt="App Image" />
-                            </div>
                             <div class="card">
                                 <div class="card-body">
                                     <div class="border p-4 rounded">
+                                        <div class="mb-4 text-center">
+                                            <img :src="AppLogo" width="100" alt="App Image" style="border: 2px solid #cb0606; border-radius: 50%;" />
+                                        </div>
                                         <div class="text-center">
                                             <h3 class="">{{ title }}</h3>
                                             <p>{{ description }} <Link :href="loginUrl" >{{ loginText }}</Link></p>
@@ -32,7 +32,7 @@
 
 <script setup>
 import { Link } from '@inertiajs/vue3';
-import AppLogo from '@/image/logo-icon.png';
+import AppLogo from '@/image/logo.png';
 defineProps({
     title: String,
     description: String,

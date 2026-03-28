@@ -63,6 +63,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/invoices/{invoice}/payments/json', [InvoiceController::class, 'invoicePaymentsJson'])->name('invoices.payments.json')->middleware('permission:invoices.index');
     Route::put('/invoices/payments/{payment}', [InvoiceController::class, 'updatePayment'])->name('invoices.payments.update')->middleware('permission:invoices.index');
     Route::delete('/invoices/payments/{payment}', [InvoiceController::class, 'deletePayment'])->name('invoices.payments.delete')->middleware('permission:invoices.index');
+    Route::post('/invoices/{invoice}/collect-payment', [InvoiceController::class, 'collectPayment'])->name('invoices.collectPayment')->middleware('permission:invoices.index');
 
     // Due Khata
     Route::get('/due/today-deposit', [InvoiceController::class, 'todayDeposit'])->name('due.today_deposit')->middleware('permission:due.today_deposit');

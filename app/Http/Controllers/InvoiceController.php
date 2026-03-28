@@ -595,7 +595,7 @@ class InvoiceController extends Controller
         ->orderBy('id', 'desc');
 
         $perPage = $request->perPage ?? 10;
-        return Inertia::render('invoices/AllInvoice', [
+        return Inertia::render('due/TodayDue', [
             'invoices' => $query->paginate($perPage)->withQueryString(),
             'items' => $items,
             'invoiceNumber' => $invoiceNumber,
@@ -648,7 +648,7 @@ class InvoiceController extends Controller
         }
 
         $perPage = $request->perPage ?? 10;
-        return Inertia::render('invoices/AllInvoice', [
+        return Inertia::render('due/AllDue', [
             'invoices' => $query->paginate($perPage)->withQueryString(),
             'items' => $items,
             'invoiceNumber' => $invoiceNumber,
@@ -781,5 +781,64 @@ class InvoiceController extends Controller
     {
         $payment->delete();
         return response()->json(['success' => true]);
+    }
+
+    public function collectPayment(Request $request, Invoice $invoice)
+    {
+        $validated = $request->validate([
+            'payment_date' => 'required|date',
+            'paid_amount'  => ['required', 'numeric', 'min:0', function ($attribute, $value, $fail) use ($invoice) {
+                if ($value > $invoice->due_amount) {
+                    $fail('পরিশোধিত পরিমাণ বাকি পরিমাণের চেয়ে বেশি হতে পারে না।');
+                }
+            }],
+            'payment_method' => 'required|string|in:cash,mobile_banking,check',
+            'account_number' => 'nullable|required_if:payment_method,mobile_banking|string|max:50',
+            'check_number'   => 'nullable|required_if:payment_method,check|string|max:50',
+            'note'           => 'nullable|string|max:255',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            // Update Invoice
+            $invoice->paid_amount += $validated['paid_amount'];
+            $invoice->due_amount -= $validated['paid_amount'];
+            $invoice->save();
+
+            // Update Customer
+            $customer = Customer::find($invoice->customer_id);
+            if ($customer) {
+                $customer->paid_amount += $validated['paid_amount'];
+                $customer->due_amount -= $validated['paid_amount'];
+                $customer->save();
+            }
+
+            // Create InvoicePayment record
+            InvoicePayment::create([
+                'invoice_id'   => $invoice->id,
+                'customer_id'  => $invoice->customer_id,
+                'payment_date' => $validated['payment_date'],
+                'total_amount' => $invoice->total_amount, // Total amount of the invoice
+                'paid_amount'  => $validated['paid_amount'],
+                'due_amount'   => $invoice->due_amount, // Remaining due on the invoice
+                'method'       => $validated['payment_method'],
+                'account_number' => $validated['payment_method'] === 'mobile_banking' ? ($validated['account_number'] ?? null) : null,
+                'check_number'   => $validated['payment_method'] === 'check' ? ($validated['check_number'] ?? null) : null,
+                'note'         => $validated['note'] ?? null,
+                'created_by'   => Auth::id(),
+                'updated_by'   => Auth::id(),
+            ]);
+
+            DB::commit();
+
+            return response()->json(['message' => 'পেমেন্ট সফলভাবে সংগ্রহ করা হয়েছে!'], 200);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('Collect Payment Error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['message' => 'পেমেন্ট সংগ্রহ করতে ব্যর্থ হয়েছে।'], 500);
+        }
     }
 }
