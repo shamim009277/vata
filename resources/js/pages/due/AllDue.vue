@@ -103,6 +103,7 @@ const paymentForm = ref({
     total_amount: 0,
     paid_amount: 0,
     due_amount: 0,
+    next_payment_date: '',
     account_number: '',
     check_number: '',
     note: '',
@@ -157,6 +158,7 @@ const openCollectPaymentModal = (invoice) => {
         total_amount: invoice.total_amount,
         paid_amount: invoice.due_amount, // Pre-fill with due amount
         due_amount: 0, // Will be calculated
+        next_payment_date: invoice.next_payment_date ? invoice.next_payment_date.split('T')[0] : '',
         account_number: '',
         check_number: '',
         note: '',
@@ -1978,6 +1980,10 @@ onMounted(() => {
                                     <div class="col-sm-6" v-if="paymentForm.payment_method === 'check'">
                                         <label class="form-label">চেক নম্বর</label>
                                         <Input v-model="paymentForm.check_number" class="form-control form-control-sm" placeholder="চেক নম্বর" />
+                                    </div>
+                                    <div class="col-sm-6" v-if="selectedInvoice?.due_amount - paymentForm.paid_amount > 0">
+                                        <label class="form-label text-danger">পরবর্তী পেমেন্টের তারিখ</label>
+                                        <Input type="date" v-model="paymentForm.next_payment_date" class="form-control form-control-sm border-danger" />
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label">নোট</label>

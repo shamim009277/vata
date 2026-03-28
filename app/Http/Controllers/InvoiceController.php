@@ -577,6 +577,40 @@ class InvoiceController extends Controller
     // --- Due Khata Sections ---
     public function todayDeposit(Request $request)
     {
+        $query = InvoicePayment::with([
+            'customer:id,name,phone,address',
+            'invoice:id,invoice_no,total_amount,paid_amount,due_amount'
+        ])
+        ->whereDate('payment_date', Carbon::now()->format('Y-m-d'))
+        ->orderBy('id', 'desc');
+
+        // Search logic
+        $search = $request->input('search');
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('customer', function ($q2) use ($search) {
+                    $q2->where('name', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%");
+                })
+                ->orWhereHas('invoice', function ($q3) use ($search) {
+                    $q3->where('invoice_no', 'like', "%{$search}%");
+                });
+            });
+        }
+
+        $perPage = $request->perPage ?? 10;
+        return Inertia::render('due/TodayDeposit', [
+            'payments' => $query->paginate($perPage)->withQueryString(),
+            'business_store' => BusinessStore::first(),
+            'filters' => [
+                'search' => $search,
+                'perPage' => $perPage,
+            ],
+        ]);
+    }
+
+    public function willDepositToday(Request $request)
+    {
         $items = Item::active()->get();
         $currentYear = Carbon::now()->format('y');
         $lastId = DB::table('invoices')->max('id');
@@ -605,12 +639,6 @@ class InvoiceController extends Controller
                 'perPage' => $perPage,
             ],
         ]);
-    }
-
-    public function willDepositToday(Request $request)
-    {
-        // Using same filter for scheduled deposits today
-        return $this->todayDeposit($request);
     }
 
     public function allDue(Request $request)
@@ -751,36 +779,102 @@ class InvoiceController extends Controller
 
     public function updatePayment(Request $request, InvoicePayment $payment)
     {
+        $invoice = Invoice::find($payment->invoice_id);
         $validated = $request->validate([
             'payment_date' => 'nullable|date',
-            'total_amount' => 'nullable|numeric|min:0',
-            'paid_amount'  => 'nullable|numeric|min:0',
-            'due_amount'   => 'nullable|numeric|min:0',
+            'paid_amount'  => ['nullable', 'numeric', 'min:0', function ($attribute, $value, $fail) use ($payment, $invoice) {
+                if ($invoice) {
+                    $otherPaymentsSum = InvoicePayment::where('invoice_id', $invoice->id)
+                        ->where('id', '!=', $payment->id)
+                        ->sum('paid_amount');
+                    if (($otherPaymentsSum + $value) > $invoice->total_amount) {
+                        $fail('পরিশোধিত পরিমাণ মোট মূল্যের চেয়ে বেশি হতে পারে না।');
+                    }
+                }
+            }],
             'payment_method' => 'nullable|string|in:cash,mobile_banking,check',
+            'next_payment_date' => 'nullable|date|after_or_equal:payment_date',
             'account_number' => 'nullable|required_if:payment_method,mobile_banking|string|max:50',
             'check_number'   => 'nullable|required_if:payment_method,check|string|max:50',
             'note'           => 'nullable|string|max:255',
         ]);
 
-        $payment->update([
-            'payment_date' => $validated['payment_date'] ?? $payment->payment_date,
-            'total_amount' => $validated['total_amount'] ?? $payment->total_amount,
-            'paid_amount'  => $validated['paid_amount'] ?? $payment->paid_amount,
-            'due_amount'   => $validated['due_amount'] ?? ($validated['total_amount'] ?? $payment->total_amount) - ($validated['paid_amount'] ?? $payment->paid_amount),
-            'method'       => $validated['payment_method'] ?? $payment->method,
-            'account_number' => ($validated['payment_method'] ?? $payment->method) === 'mobile_banking' ? ($validated['account_number'] ?? null) : null,
-            'check_number'   => ($validated['payment_method'] ?? $payment->method) === 'check' ? ($validated['check_number'] ?? null) : null,
-            'note'         => $validated['note'] ?? $payment->note,
-            'updated_by'   => Auth::id(),
-        ]);
+        DB::beginTransaction();
+        try {
+            $oldPaidAmount = $payment->paid_amount;
+            $newPaidAmount = $validated['paid_amount'] ?? $oldPaidAmount;
+            $diff = $newPaidAmount - $oldPaidAmount;
 
-        return response()->json(['success' => true]);
+            // Update Invoice
+            if ($invoice) {
+                $invoice->paid_amount += $diff;
+                $invoice->due_amount -= $diff;
+                if (isset($validated['next_payment_date'])) {
+                    $invoice->next_payment_date = $validated['next_payment_date'];
+                }
+                $invoice->save();
+            }
+
+            // Update Customer
+            $customer = Customer::find($payment->customer_id);
+            if ($customer) {
+                $customer->paid_amount += $diff;
+                $customer->due_amount -= $diff;
+                if (isset($validated['next_payment_date'])) {
+                    $customer->next_payment_date = $validated['next_payment_date'];
+                }
+                $customer->save();
+            }
+
+            // Update Payment record
+            $payment->update([
+                'payment_date' => $validated['payment_date'] ?? $payment->payment_date,
+                'paid_amount'  => $newPaidAmount,
+                'due_amount'   => $invoice ? $invoice->due_amount : $payment->due_amount,
+                'method'       => $validated['payment_method'] ?? $payment->method,
+                'account_number' => ($validated['payment_method'] ?? $payment->method) === 'mobile_banking' ? ($validated['account_number'] ?? null) : null,
+                'check_number'   => ($validated['payment_method'] ?? $payment->method) === 'check' ? ($validated['check_number'] ?? null) : null,
+                'note'         => $validated['note'] ?? $payment->note,
+                'updated_by'   => Auth::id(),
+            ]);
+
+            DB::commit();
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Update Payment Error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'পেমেন্ট আপডেট করতে ব্যর্থ হয়েছে।'], 500);
+        }
     }
 
     public function deletePayment(InvoicePayment $payment)
     {
-        $payment->delete();
-        return response()->json(['success' => true]);
+        DB::beginTransaction();
+        try {
+            // Rollback Invoice
+            $invoice = Invoice::find($payment->invoice_id);
+            if ($invoice) {
+                $invoice->paid_amount -= $payment->paid_amount;
+                $invoice->due_amount += $payment->paid_amount;
+                $invoice->save();
+            }
+
+            // Rollback Customer
+            $customer = Customer::find($payment->customer_id);
+            if ($customer) {
+                $customer->paid_amount -= $payment->paid_amount;
+                $customer->due_amount += $payment->paid_amount;
+                $customer->save();
+            }
+
+            $payment->delete();
+            DB::commit();
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Delete Payment Error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'পেমেন্ট ডিলিট করতে ব্যর্থ হয়েছে।'], 500);
+        }
     }
 
     public function collectPayment(Request $request, Invoice $invoice)
@@ -793,6 +887,7 @@ class InvoiceController extends Controller
                 }
             }],
             'payment_method' => 'required|string|in:cash,mobile_banking,check',
+            'next_payment_date' => 'nullable|date|after_or_equal:payment_date',
             'account_number' => 'nullable|required_if:payment_method,mobile_banking|string|max:50',
             'check_number'   => 'nullable|required_if:payment_method,check|string|max:50',
             'note'           => 'nullable|string|max:255',
@@ -804,13 +899,21 @@ class InvoiceController extends Controller
             // Update Invoice
             $invoice->paid_amount += $validated['paid_amount'];
             $invoice->due_amount -= $validated['paid_amount'];
+            if (isset($validated['next_payment_date'])) {
+                $invoice->next_payment_date = $validated['next_payment_date'];
+            }
             $invoice->save();
 
             // Update Customer
             $customer = Customer::find($invoice->customer_id);
             if ($customer) {
+                // Customer model also has paid_amount and due_amount that represent total across all invoices
                 $customer->paid_amount += $validated['paid_amount'];
                 $customer->due_amount -= $validated['paid_amount'];
+                // Also update customer's global next payment date if provided
+                if (isset($validated['next_payment_date'])) {
+                    $customer->next_payment_date = $validated['next_payment_date'];
+                }
                 $customer->save();
             }
 

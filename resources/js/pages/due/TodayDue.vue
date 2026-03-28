@@ -804,6 +804,7 @@ const paymentForm = ref({
     total_amount: 0,
     paid_amount: 0,
     due_amount: 0,
+    next_payment_date: '',
     account_number: '',
     check_number: '',
     note: '',
@@ -857,6 +858,7 @@ const openCollectPaymentModal = (invoice) => {
         total_amount: invoice.total_amount,
         paid_amount: invoice.due_amount, // Pre-fill with due amount
         due_amount: 0, // Will be calculated
+        next_payment_date: invoice.next_payment_date ? invoice.next_payment_date.split('T')[0] : '',
         account_number: '',
         check_number: '',
         note: '',
@@ -1034,7 +1036,7 @@ const printThermalPaymentReceipt = (p) => {
 </script>
 
 <template>
-    <Head title="আজকে জমা দেবে" />
+    <Head title="আজকে জমা" />
     <AppLayout1>
         <div class="row">
             <div class="col-12 col-lg-12">
@@ -1045,7 +1047,7 @@ const printThermalPaymentReceipt = (p) => {
                             <!-- Title -->
                             <h6 class="mb-0 text-primary d-flex align-items-center">
                                 <a href="javascript:;" class="me-2">
-                                    <i class="fadeIn animated bx bx-list-ul"></i> আজকে জমা দেবে
+                                    <i class="fadeIn animated bx bx-list-ul"></i> আজকে জমা
                                 </a>
                             </h6>
 
@@ -1825,6 +1827,10 @@ const printThermalPaymentReceipt = (p) => {
                                         <div class="col-sm-6" v-if="paymentForm.payment_method === 'check'">
                                             <label class="form-label">চেক নম্বর</label>
                                             <Input v-model="paymentForm.check_number" class="form-control form-control-sm" placeholder="চেক নম্বর" />
+                                        </div>
+                                        <div class="col-sm-6" v-if="selectedInvoice?.due_amount - paymentForm.paid_amount > 0">
+                                            <label class="form-label text-danger">পরবর্তী পেমেন্টের তারিখ</label>
+                                            <Input type="date" v-model="paymentForm.next_payment_date" class="form-control form-control-sm border-danger" />
                                         </div>
                                         <div class="col-12">
                                             <label class="form-label">নোট</label>
