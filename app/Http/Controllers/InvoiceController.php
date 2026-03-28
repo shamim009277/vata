@@ -624,9 +624,28 @@ class InvoiceController extends Controller
             'invoiceDetails:id,invoice_id,item_id,quantity,rate,amount,delivery_quantity',
             'invoiceDetails.item:id,name'
         ])
-        ->where('due_amount', '>', 0)
-        ->whereDate('next_payment_date', Carbon::now()->format('Y-m-d'))
-        ->orderBy('id', 'desc');
+        ->where('due_amount', '>', 0);
+
+        // Date filter for next_payment_date
+        $date = $request->input('date', Carbon::now()->format('Y-m-d'));
+        if ($date) {
+            $query->whereDate('next_payment_date', $date);
+        }
+
+        // Search logic
+        $search = $request->input('search');
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('invoice_no', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($q2) use ($search) {
+                        $q2->where('name', 'like', "%{$search}%")
+                            ->orWhere('phone', 'like', "%{$search}%")
+                            ->orWhere('address', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $query->orderBy('id', 'desc');
 
         $perPage = $request->perPage ?? 10;
         return Inertia::render('due/TodayDue', [
@@ -636,7 +655,9 @@ class InvoiceController extends Controller
             'deliveryNumber' => $deliveryNumber,
             'business_store' => BusinessStore::first(),
             'filters' => [
+                'search' => $search,
                 'perPage' => $perPage,
+                'date' => $date,
             ],
         ]);
     }
@@ -656,10 +677,16 @@ class InvoiceController extends Controller
             'invoiceDetails:id,invoice_id,item_id,quantity,rate,amount,delivery_quantity',
             'invoiceDetails.item:id,name'
         ])
-        ->where('due_amount', '>', 0)
-        ->orderBy('id', 'desc');
+        ->where('due_amount', '>', 0);
 
-        // Optional filters
+        // Date range filter
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+        if ($startDate && $endDate) {
+            $query->whereBetween('invoice_date', [$startDate, $endDate]);
+        }
+
+        // Search logic
         $search = $request->input('search');
         if ($search) {
             $query->where(function ($q) use ($search) {
@@ -668,12 +695,11 @@ class InvoiceController extends Controller
                         $q2->where('name', 'like', "%{$search}%")
                             ->orWhere('phone', 'like', "%{$search}%")
                             ->orWhere('address', 'like', "%{$search}%");
-                    })
-                    ->orWhereHas('invoiceDetails.item', function ($q3) use ($search) {
-                        $q3->where('name', 'like', "%{$search}%");
                     });
             });
         }
+
+        $query->orderBy('id', 'desc');
 
         $perPage = $request->perPage ?? 10;
         return Inertia::render('due/AllDue', [
@@ -685,6 +711,8 @@ class InvoiceController extends Controller
             'filters' => [
                 'search' => $search,
                 'perPage' => $perPage,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
             ],
         ]);
     }

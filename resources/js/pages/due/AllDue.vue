@@ -948,7 +948,7 @@ const submitCollectPayment = () => {
 };
 
 watch([search, perPage,start_date,end_date], () => {
-    router.get(route('invoice.all'), {
+    router.get(route('due.all'), {
         search: search.value,
         perPage: perPage.value,
         start_date: start_date.value,

@@ -346,7 +346,7 @@ const invoiceDelivary = () => {
 }
 
 watch([search, perPage,date], () => {
-    router.get(route('invoices.index'), {
+    router.get(route('due.will_deposit_today'), {
         search: search.value,
         perPage: perPage.value,
         date: date.value,
@@ -1036,7 +1036,7 @@ const printThermalPaymentReceipt = (p) => {
 </script>
 
 <template>
-    <Head title="আজকে জমা" />
+    <Head title="আজকে জমা দেবে " />
     <AppLayout1>
         <div class="row">
             <div class="col-12 col-lg-12">
@@ -1047,7 +1047,7 @@ const printThermalPaymentReceipt = (p) => {
                             <!-- Title -->
                             <h6 class="mb-0 text-primary d-flex align-items-center">
                                 <a href="javascript:;" class="me-2">
-                                    <i class="fadeIn animated bx bx-list-ul"></i> আজকে জমা
+                                    <i class="fadeIn animated bx bx-list-ul"></i> আজকে জমা দেবে 
                                 </a>
                             </h6>
 
@@ -1060,12 +1060,6 @@ const printThermalPaymentReceipt = (p) => {
                                     class="form-control form-control-sm"
                                     style="width: 160px;"
                                 />
-
-                                <!-- Create Button -->
-                                <button class="btn btn-primary btn-sm" @click="createInvoice">
-                                    <i class="fadeIn animated bx bx-plus-medical me-1" style="font-size: small;"></i>
-                                    নতুন চালান
-                                </button>
                             </div>
                         </div>
                     </div>
